@@ -1,0 +1,93 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "PushPlayerCharacter.h"
+
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+
+APushPlayerCharacter::APushPlayerCharacter()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
+	CameraBoom->SetupAttachment(GetRootComponent());
+
+	ViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("View Camera"));
+	ViewCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0, 720.f, 0);
+	
+}
+
+void APushPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+}
+
+void APushPlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void APushPlayerCharacter::PawnClientRestart()
+{
+	Super::PawnClientRestart();
+
+	if (APlayerController* OwningPlayerController = GetController<APlayerController>())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = OwningPlayerController->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			InputSubsystem->RemoveMappingContext(GameplayInputMappingContext);
+			InputSubsystem->AddMappingContext(GameplayInputMappingContext, 0);
+		}
+	}
+}
+
+void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::Jump);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLookInput);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMoveInput);
+	}
+}
+
+void APushPlayerCharacter::HandleLookInput(const FInputActionValue& ActionValue)
+{
+	const FVector2D InputValue = ActionValue.Get<FVector2D>();
+
+	AddControllerPitchInput(-InputValue.Y);
+	AddControllerYawInput(InputValue.X);
+}
+
+void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
+{
+	FVector2D InputValue = ActionValue.Get<FVector2D>();
+	InputValue.Normalize();
+
+	AddMovementInput(GetMoveForwardDirection() * InputValue.Y + GetLookRightDirection() * InputValue.X);
+}
+
+FVector APushPlayerCharacter::GetLookRightDirection() const
+{
+	return ViewCamera->GetRightVector();
+}
+
+FVector APushPlayerCharacter::GetLookForwardDirection() const
+{
+	return ViewCamera->GetForwardVector();
+}
+
+FVector APushPlayerCharacter::GetMoveForwardDirection() const
+{
+	return FVector::CrossProduct(GetLookRightDirection(), FVector::UpVector);
+}
