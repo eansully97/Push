@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "GameplayWidget.generated.h"
+#include "OverheadWidget.generated.h"
 
 class UAbilitySystemComponent;
 class UValueGauge;
@@ -12,11 +12,11 @@ class UValueGauge;
  * 
  */
 UCLASS()
-class PUSH_API UGameplayWidget : public UUserWidget
+class PUSH_API UOverheadWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	virtual void NativeConstruct() override;
+	void ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent);
 
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -25,6 +25,4 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UValueGauge* ManaBar;
 
-	UPROPERTY()
-	UAbilitySystemComponent* OwnerAbilitySystemComponent;
 };

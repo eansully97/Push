@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "PushCharacter.generated.h"
 
+class UWidgetComponent;
 class UPushAbilitySystemComponent;
 class UPushAttributeSet;
 
@@ -20,9 +21,17 @@ public:
 
 	void ServerSideInit();
 	void ClientSideInit();
+	bool IsLocallyControlledByPlayer() const;
+
+	void ConfigureOverheadWidget();
 
 protected:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual void BeginPlay() override;
+
+	//Only Called On Server
+	virtual void PossessedBy(AController* NewController) override;
 
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
@@ -30,4 +39,7 @@ private:
 
 	UPROPERTY()
 	UPushAttributeSet* PushAttributeSet;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Widgets")
+	UWidgetComponent* OverheadWidgetComponent;
 };

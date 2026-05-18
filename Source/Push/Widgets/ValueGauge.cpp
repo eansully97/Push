@@ -3,18 +3,40 @@
 
 #include "ValueGauge.h"
 
+#include "AbilitySystemComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 
 void UValueGauge::NativePreConstruct()
 {
 	Super::NativePreConstruct();
-
 	ProgressBar->SetFillColorAndOpacity(BarColor);
 }
 
-void UValueGauge::SetValue(const float NewValue, const float NewMaxValue) const
+void UValueGauge::SetAndBoundToGameplayAttribute(UAbilitySystemComponent* AbilitySystemComponent,
+	const FGameplayAttribute& Attribute, const FGameplayAttribute& MaxAttribute)
 {
+	if (AbilitySystemComponent)
+	{
+		bool bFound;
+		float Value = AbilitySystemComponent->GetGameplayAttributeValue(Attribute, bFound);
+		float MaxValue = AbilitySystemComponent->GetGameplayAttributeValue(MaxAttribute, bFound);
+
+		if (bFound)
+		{
+			SetValue(Value, MaxValue);
+		}
+
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Attribute).AddUObject(this, &ThisClass::ValueChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(MaxAttribute).AddUObject(this, &ThisClass::MaxValueChanged);
+	}
+}
+
+void UValueGauge::SetValue(const float NewValue, const float NewMaxValue)
+{
+	CachedValue = NewValue;
+	CachedMaxValue = NewMaxValue;
+	
 	if (NewMaxValue == 0)
 	{
 		return;
@@ -26,4 +48,14 @@ void UValueGauge::SetValue(const float NewValue, const float NewMaxValue) const
 	const FNumberFormattingOptions FormattingOptions = FNumberFormattingOptions().SetMaximumFractionalDigits(0);
 
 	ValueText->SetText(FText::Format(FTextFormat::FromString("{0}/{1}"), FText::AsNumber(NewValue, &FormattingOptions), FText::AsNumber(NewMaxValue, &FormattingOptions)));
+}
+
+void UValueGauge::ValueChanged(const FOnAttributeChangeData& ChangedData)
+{
+	SetValue(ChangedData.NewValue, CachedMaxValue);
+}
+
+void UValueGauge::MaxValueChanged(const FOnAttributeChangeData& ChangedData)
+{
+	SetValue(CachedValue, ChangedData.NewValue);
 }

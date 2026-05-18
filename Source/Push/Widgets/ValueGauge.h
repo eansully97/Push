@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AttributeSet.h"
 #include "Blueprint/UserWidget.h"
+#include "GameplayEffectTypes.h"
 #include "ValueGauge.generated.h"
 
+class UAbilitySystemComponent;
 class UProgressBar;
 class UTextBlock;
 
@@ -19,10 +22,17 @@ class PUSH_API UValueGauge : public UUserWidget
 	
 public:
 	virtual void NativePreConstruct() override;
-
-	void SetValue(const float NewValue, const float NewMaxValue) const;
-
+	
+	void SetAndBoundToGameplayAttribute(UAbilitySystemComponent* AbilitySystemComponent, const FGameplayAttribute& Attribute, const FGameplayAttribute& MaxAttribute);
+	void SetValue(const float NewValue, const float NewMaxValue);
+	
 private:
+	void ValueChanged(const FOnAttributeChangeData& ChangedData);
+	void MaxValueChanged(const FOnAttributeChangeData& ChangedData);
+
+	float CachedValue;
+	float CachedMaxValue;
+	
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	FLinearColor BarColor;
 	
