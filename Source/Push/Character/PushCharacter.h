@@ -42,4 +42,14 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Widgets")
 	UWidgetComponent* OverheadWidgetComponent;
+	
+	FTimerHandle OverheadWidgetVisibilityUpdateTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "OverheadWidget")
+	float OverheadWidgetVisibilityCheckInterval = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "OverheadWidget")
+	float OverheadWidgetVisibilityRangeSq = 1000000.f;
+
+	void UpdateOverheadWidgetVisibility();
 };
