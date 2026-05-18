@@ -26,6 +26,7 @@ void APushCharacter::ServerSideInit()
 {
 	PushAbilitySystemComponent->InitAbilityActorInfo(this,this);
 	PushAbilitySystemComponent->ApplyInitialEffects();
+	PushAbilitySystemComponent->GiveInitialAbilities();
 }
 
 void APushCharacter::ClientSideInit()

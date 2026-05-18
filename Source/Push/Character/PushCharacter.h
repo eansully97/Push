@@ -34,12 +34,19 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 private:
+
+	/*
+	 *	GAS
+	 */
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;
 
 	UPROPERTY()
 	UPushAttributeSet* PushAttributeSet;
 
+	/*
+	*	OverheadWidget
+	*/
 	UPROPERTY(VisibleDefaultsOnly, Category = "Widgets")
 	UWidgetComponent* OverheadWidgetComponent;
 	

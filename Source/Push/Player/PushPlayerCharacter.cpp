@@ -3,6 +3,7 @@
 
 #include "PushPlayerCharacter.h"
 
+#include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
@@ -58,6 +59,12 @@ void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::Jump);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLookInput);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMoveInput);
+
+		// Optimal Ability Input Setup
+		for (const auto& AbilityActionPair : AbilityInputActions)
+		{
+			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Triggered, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
+		}
 	}
 }
 
@@ -75,6 +82,18 @@ void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
 	InputValue.Normalize();
 
 	AddMovementInput(GetMoveForwardDirection() * InputValue.Y + GetLookRightDirection() * InputValue.X);
+}
+
+void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID)
+{
+	if (ActionValue.Get<bool>())
+	{
+		GetAbilitySystemComponent()->AbilityLocalInputPressed(static_cast<int32>(AbilityInputID));
+	}
+	else
+	{
+		GetAbilitySystemComponent()->AbilityLocalInputReleased(static_cast<int32>(AbilityInputID));
+	}
 }
 
 FVector APushPlayerCharacter::GetLookRightDirection() const

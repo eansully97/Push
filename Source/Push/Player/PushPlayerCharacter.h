@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
+#include "Push/PushGameplayAbilityTypes.h"
 #include "Push/Character/PushCharacter.h"
 #include "PushPlayerCharacter.generated.h"
 
@@ -27,12 +28,24 @@ protected:
 	virtual void PawnClientRestart() override;
 
 private:
+	/*
+	*	Components
+	*/
 	UPROPERTY(VisibleDefaultsOnly, Category = "View")
 	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "View")
 	UCameraComponent* ViewCamera;
 
+	FVector GetLookRightDirection() const;
+	FVector GetLookForwardDirection() const;
+	FVector GetMoveForwardDirection() const;
+
+	/*
+	*	Input
+	*/
+private:
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputMappingContext* GameplayInputMappingContext;
 
@@ -45,12 +58,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* MoveAction;
 
-public:
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TMap<EAbilityInputID, UInputAction*> AbilityInputActions;
+	
 	void HandleLookInput(const FInputActionValue& ActionValue);
 	void HandleMoveInput(const FInputActionValue& ActionValue);
+	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
 
-	FVector GetLookRightDirection() const;
-	FVector GetLookForwardDirection() const;
-	FVector GetMoveForwardDirection() const;
-
+public:
+	
 };
