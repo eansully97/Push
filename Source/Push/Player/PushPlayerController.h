@@ -6,6 +6,9 @@
 #include "GameFramework/PlayerController.h"
 #include "PushPlayerController.generated.h"
 
+class UGameplayWidget;
+class APushPlayerCharacter;
+
 /**
  * 
  */
@@ -13,4 +16,22 @@ UCLASS()
 class PUSH_API APushPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+public:
+	// Only called on server
+	virtual void OnPossess(APawn* InPawn) override;
+
+	// Only called on client and listening server
+	virtual void AcknowledgePossession(APawn* InPawn) override;
+
+private:
+	void SpawnGameplayWidget();
+	
+	UPROPERTY()
+	APushPlayerCharacter* PushPlayerCharacter;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UGameplayWidget> GameplayWidgetClass;
+
+	UPROPERTY()
+	UGameplayWidget* GameplayWidget;
 };
