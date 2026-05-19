@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameFramework/PlayerController.h"
 #include "PushPlayerController.generated.h"
 
@@ -13,16 +14,24 @@ class APushPlayerCharacter;
  * 
  */
 UCLASS()
-class PUSH_API APushPlayerController : public APlayerController
+class PUSH_API APushPlayerController : public APlayerController, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 public:
 	// Only called on server
 	virtual void OnPossess(APawn* InPawn) override;
-
 	// Only called on client and listening server
 	virtual void AcknowledgePossession(APawn* InPawn) override;
 
+	/*
+	 *	Generic Team Agent Interface
+	 */
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
+	virtual FGenericTeamId GetGenericTeamId() const override;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 private:
 	void SpawnGameplayWidget();
 	
@@ -34,4 +43,7 @@ private:
 
 	UPROPERTY()
 	UGameplayWidget* GameplayWidget;
+
+	UPROPERTY(Replicated)
+	FGenericTeamId TeamID;
 };

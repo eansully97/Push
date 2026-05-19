@@ -3,9 +3,13 @@
 
 #include "PushCharacter.h"
 
+#include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Push/GAS/PushAbilitySystemComponent.h"
+#include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Push/GAS/PushAttributeSet.h"
 #include "Push/Widgets/OverheadWidget.h"
 
@@ -20,6 +24,8 @@ APushCharacter::APushCharacter()
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverheadWidgetComponent");
 	OverheadWidgetComponent->SetupAttachment(GetRootComponent());
+
+	BindChangeDelegates();
 }
 
 void APushCharacter::ServerSideInit()
@@ -39,6 +45,7 @@ void APushCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	ConfigureOverheadWidget();
+	RelativeMeshTransform = GetMesh()->GetRelativeTransform();
 }
 
 void APushCharacter::PossessedBy(AController* NewController)
@@ -48,6 +55,33 @@ void APushCharacter::PossessedBy(AController* NewController)
 	if (NewController && !NewController->IsPlayerController())
 	{
 		ServerSideInit();
+	}
+}
+
+void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, TeamID)
+}
+
+void APushCharacter::BindChangeDelegates()
+{
+	if (PushAbilitySystemComponent)
+	{
+		PushAbilitySystemComponent->RegisterGameplayTagEvent(UPushAbilitySystemStatics::GetDeadStateTag()).AddUObject(this, &ThisClass::DeathTagUpdated);
+	}
+}
+
+void APushCharacter::DeathTagUpdated(FGameplayTag Tag, int32 Count)
+{
+	if (Count != 0)
+	{
+		StartDeathSequence();
+	}
+	else
+	{
+		Respawn();
 	}
 }
 
@@ -97,6 +131,102 @@ void APushCharacter::UpdateOverheadWidgetVisibility()
 	}
 }
 
+void APushCharacter::SetStatusGaugeEnabled(bool bEnabled)
+{
+	GetWorldTimerManager().ClearTimer(OverheadWidgetVisibilityUpdateTimerHandle);
+	if (bEnabled)
+	{
+		ConfigureOverheadWidget();
+	}
+	else
+	{
+		OverheadWidgetComponent->SetHiddenInGame(true);
+	}
+}
+
+void APushCharacter::StartDeathSequence()
+{
+	OnDead();
+	PlayDeathAnimation();
+	SetStatusGaugeEnabled(false);
+	GetCharacterMovement()->SetMovementMode(MOVE_None);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APushCharacter::PlayDeathAnimation()
+{
+	if (DeathMontage)
+	{
+		float MontageDuration = PlayAnimMontage(DeathMontage);
+		GetWorldTimerManager().SetTimer(DeathMontageTimerHandle, this, &ThisClass::DeathMontageFinished, MontageDuration + DeathMontageFinishTimeShift);
+	}
+}
+
+void APushCharacter::Respawn()
+{
+	OnRespawn();
+	SetRagdollEnabled(false);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	GetMesh()->GetAnimInstance()->StopAllMontages(0.f);
+	SetStatusGaugeEnabled(true);
+
+	if (HasAuthority() && GetController())
+	{
+		TWeakObjectPtr<AActor> StartSpot = GetController()->StartSpot;
+		if (StartSpot.IsValid())
+		{
+			SetActorTransform(StartSpot->GetActorTransform());
+		}
+ 	}
+
+	if (PushAbilitySystemComponent)
+	{
+		PushAbilitySystemComponent->ApplyFullStatEffect();
+	}
+}
+
+void APushCharacter::DeathMontageFinished()
+{
+	SetRagdollEnabled(true);
+}
+
+void APushCharacter::SetRagdollEnabled(bool bEnabled)
+{
+	if (bEnabled)
+	{
+		GetMesh()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		GetMesh()->SetSimulatePhysics(true);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	}
+	else
+	{
+		GetMesh()->SetSimulatePhysics(false);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMesh()->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		GetMesh()->SetRelativeTransform(RelativeMeshTransform);
+	}
+}
+
+void APushCharacter::OnDead()
+{
+	//Override in base class
+}
+
+void APushCharacter::OnRespawn()
+{
+	//Override in base class
+}
+
+void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)
+{
+	TeamID = NewTeamID;
+}
+
+FGenericTeamId APushCharacter::GetGenericTeamId() const
+{
+	return TeamID;
+}
 
 UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const
 {

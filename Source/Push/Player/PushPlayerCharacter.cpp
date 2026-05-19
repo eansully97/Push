@@ -96,6 +96,22 @@ void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionVal
 	}
 }
 
+void APushPlayerCharacter::OnDeath()
+{
+	if (APlayerController* OwningController = GetController<APlayerController>())
+	{
+		DisableInput(OwningController);
+	}
+}
+
+void APushPlayerCharacter::OnRespawn()
+{
+	if (APlayerController* OwningController = GetController<APlayerController>())
+	{
+		EnableInput(OwningController);
+	}
+}
+
 FVector APushPlayerCharacter::GetLookRightDirection() const
 {
 	return ViewCamera->GetRightVector();

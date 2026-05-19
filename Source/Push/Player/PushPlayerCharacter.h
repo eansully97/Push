@@ -65,6 +65,9 @@ private:
 	void HandleMoveInput(const FInputActionValue& ActionValue);
 	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
 
-public:
-	
+	/*
+	*	Death and Respawn
+	*/
+	virtual void OnDeath();
+	virtual void OnRespawn();
 };

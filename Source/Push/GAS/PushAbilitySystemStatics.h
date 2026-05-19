@@ -17,4 +17,5 @@ class PUSH_API UPushAbilitySystemStatics : public UBlueprintFunctionLibrary
 	
 public:
 	static FGameplayTag GetBasicAttackAbilityTag();
+	static FGameplayTag GetDeadStateTag();
 };

@@ -4,6 +4,7 @@
 #include "PushPlayerController.h"
 
 #include "PushPlayerCharacter.h"
+#include "Net/UnrealNetwork.h"
 #include "Push/Widgets/GameplayWidget.h"
 
 
@@ -15,6 +16,7 @@ void APushPlayerController::OnPossess(APawn* InPawn)
 	if (PushPlayerCharacter)
 	{
 		PushPlayerCharacter->ServerSideInit();
+		PushPlayerCharacter->SetGenericTeamId(TeamID);
 	}
 }
 
@@ -28,6 +30,23 @@ void APushPlayerController::AcknowledgePossession(APawn* InPawn)
 		PushPlayerCharacter->ClientSideInit();
 		SpawnGameplayWidget();
 	}
+}
+
+void APushPlayerController::SetGenericTeamId(const FGenericTeamId& NewTeamID)
+{
+	TeamID = NewTeamID;
+}
+
+FGenericTeamId APushPlayerController::GetGenericTeamId() const
+{
+	return TeamID;
+}
+
+void APushPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, TeamID);
 }
 
 void APushPlayerController::SpawnGameplayWidget()

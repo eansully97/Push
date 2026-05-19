@@ -3,6 +3,13 @@
 
 #include "PushAbilitySystemComponent.h"
 
+#include "PushAttributeSet.h"
+
+UPushAbilitySystemComponent::UPushAbilitySystemComponent()
+{
+	GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::HealthUpdated);
+}
+
 void UPushAbilitySystemComponent::ApplyInitialEffects()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
@@ -10,8 +17,7 @@ void UPushAbilitySystemComponent::ApplyInitialEffects()
 	
 	for (const auto& EffectClass : InitialEffects)
 	{
-		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingSpec(EffectClass, 1, MakeEffectContext());
-		ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
+		AuthApplyGameplayEffect(EffectClass);
 	}
 }
 
@@ -29,4 +35,28 @@ void UPushAbilitySystemComponent::GiveInitialAbilities()
 	{
 		GiveAbility(FGameplayAbilitySpec(AbilityPair.Value, 1, static_cast<int32>(AbilityPair.Key), nullptr));
 	}
+}
+
+void UPushAbilitySystemComponent::ApplyFullStatEffect()
+{
+	AuthApplyGameplayEffect(FullStatEffect);
+}
+
+void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& ChangeData)
+{
+	if (!GetOwner()) return;
+
+	if (ChangeData.NewValue <= 0 && GetOwner()->HasAuthority() && DeathEffect)
+	{
+		AuthApplyGameplayEffect(DeathEffect);
+	}
+}
+
+void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+	
+	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingSpec(GameplayEffect, Level, MakeEffectContext());
+	ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
 }

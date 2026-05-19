@@ -7,3 +7,8 @@ FGameplayTag UPushAbilitySystemStatics::GetBasicAttackAbilityTag()
 {
 	return FGameplayTag::RequestGameplayTag("Ability.BasicAttack");
 }
+
+FGameplayTag UPushAbilitySystemStatics::GetDeadStateTag()
+{
+	return FGameplayTag::RequestGameplayTag("Stats.Dead");
+}
