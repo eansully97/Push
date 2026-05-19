@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "Abilities/GameplayAbility.h"
 #include "PushGameplayAbility.generated.h"
 
@@ -16,5 +17,5 @@ class PUSH_API UPushGameplayAbility : public UGameplayAbility
 
 protected:
 	UAnimInstance* GetOwnerAnimInstance() const;
-	TArray<FHitResult> GetHitResultFromSweepLocationTargetData(const FGameplayAbilityTargetDataHandle& TargetDataHandle, float SphereSweepRadius = 30.f, bool bDrawDebug = false, bool bIgnoreSelf = true) const;
+	TArray<FHitResult> GetHitResultFromSweepLocationTargetData(const FGameplayAbilityTargetDataHandle& TargetDataHandle, float SphereSweepRadius = 30.f, ETeamAttitude::Type TargetTeam = ETeamAttitude::Hostile, bool bDrawDebug = false, bool bIgnoreSelf = true) const;
 };
