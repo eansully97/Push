@@ -26,6 +26,9 @@ private:
 	void SetupWaitComboInputPressed();
 	void TryCommitCombo();
 
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float TargetSweepSphereRadius = 30.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
 	TMap<FName, TSubclassOf<UGameplayEffect>> DamageEffectMap;
 
