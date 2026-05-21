@@ -2,14 +2,24 @@
 .vs/
 
 # Content
+Content/Collections/**
+Content/Cosmetics/**
+Content/Developers/**
+Content/Fonts/**
+Content/Maps/**
+Content/Megascans/**
+Content/Models/**
+Content/MSPresets/**
+Content/ParagonCountess/**
+Content/ParagonCrunch/**
 !Content/AI/**
 !Content/Characters/**
 !Content/Framework/**
 !Content/GameplayAbilities/**
 !Content/GameplayCueNotifies/**
-!Conent/Input/**
+!Content/Input/**
 !Content/Player/**
-!Conent/Widgets/**
+!Content/Widgets/**
 
 # Compiled Object files
 *.slo
