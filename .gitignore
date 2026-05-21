@@ -2,16 +2,16 @@
 .vs/
 
 # Content
-Content/Collections/**
-Content/Cosmetics/**
-Content/Developers/**
-Content/Fonts/**
-Content/Maps/**
-Content/Megascans/**
-Content/Models/**
-Content/MSPresets/**
-Content/ParagonCountess/**
-Content/ParagonCrunch/**
+Content/Collections
+Content/Cosmetics
+Content/Developers
+Content/Fonts
+Content/Maps
+Content/Megascans
+Content/Models
+Content/MSPresets
+Content/ParagonCountess
+Content/ParagonCrunch
 !Content/AI/**
 !Content/Characters/**
 !Content/Framework/**
