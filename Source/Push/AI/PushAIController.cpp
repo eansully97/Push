@@ -3,8 +3,11 @@
 
 #include "PushAIController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Push/GAS/PushAbilitySystemStatics.h"
 
 APushAIController::APushAIController()
 {
@@ -59,7 +62,7 @@ void APushAIController::TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus
 	}
 	else
 	{
-		
+		ForgetActorIfDead(TargetActor);
 	}
 }
 
@@ -72,7 +75,6 @@ void APushAIController::TargetForgotten(AActor* TargetActor)
 	{
 		SetCurrentTarget(GetNextPerceivedActor());
 	}
-		
 }
 
 const UObject* APushAIController::GetCurrentTarget() const
@@ -97,6 +99,28 @@ void APushAIController::SetCurrentTarget(AActor* NewTarget)
 	else
 	{
 		BlackboardComponent->ClearValue(TargetBlackboardKeyName);
+	}
+}
+
+void APushAIController::ForgetActorIfDead(AActor* ActorToForget)
+{
+	const UAbilitySystemComponent* ActorASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(ActorToForget);
+	if (!ActorASC)
+		return;
+
+	if (ActorASC->HasMatchingGameplayTag(UPushAbilitySystemStatics::GetDeadStateTag()))
+	{
+		for (UAIPerceptionComponent::TActorPerceptionContainer::TIterator Iter = AIPerceptionComponent->GetPerceptualDataIterator(); Iter; ++Iter)
+		{
+			if (Iter->Key != ActorToForget)
+			{
+				continue;
+			}
+			for (FAIStimulus& Stimulus : Iter->Value.LastSensedStimuli)
+			{
+				Stimulus.SetStimulusAge(TNumericLimits<float>::Max());
+			}
+		}
 	}
 }
 

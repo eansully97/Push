@@ -8,6 +8,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISense_Sight.h"
 #include "Push/GAS/PushAbilitySystemComponent.h"
 #include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Push/GAS/PushAttributeSet.h"
@@ -24,6 +26,8 @@ APushCharacter::APushCharacter()
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverheadWidgetComponent");
 	OverheadWidgetComponent->SetupAttachment(GetRootComponent());
+
+	PerceptionStimuliSourceComponent = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>("AI Perception Stimulus Source Component");
 
 	BindChangeDelegates();
 }
@@ -46,6 +50,8 @@ void APushCharacter::BeginPlay()
 	
 	ConfigureOverheadWidget();
 	RelativeMeshTransform = GetMesh()->GetRelativeTransform();
+
+	PerceptionStimuliSourceComponent->RegisterForSense(UAISense_Sight::StaticClass());
 }
 
 void APushCharacter::PossessedBy(AController* NewController)
@@ -151,6 +157,7 @@ void APushCharacter::StartDeathSequence()
 	SetStatusGaugeEnabled(false);
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetAIPerceptionStimuliSourceEnabled(false);
 }
 
 void APushCharacter::PlayDeathAnimation()
@@ -168,8 +175,15 @@ void APushCharacter::Respawn()
 	SetRagdollEnabled(false);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-	GetMesh()->GetAnimInstance()->StopAllMontages(0.f);
+
+	SetAIPerceptionStimuliSourceEnabled(true);
 	SetStatusGaugeEnabled(true);
+	
+	if (GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->StopAllMontages(0.f);
+	}
+	
 
 	if (HasAuthority() && GetController())
 	{
@@ -210,12 +224,12 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 
 void APushCharacter::OnDead()
 {
-	//Override in base class
+	//Override in child class
 }
 
 void APushCharacter::OnRespawn()
 {
-	//Override in base class
+	//Override in child class
 }
 
 void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)
@@ -226,6 +240,21 @@ void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)
 FGenericTeamId APushCharacter::GetGenericTeamId() const
 {
 	return TeamID;
+}
+
+void APushCharacter::SetAIPerceptionStimuliSourceEnabled(bool bEnabled)
+{
+	if (!PerceptionStimuliSourceComponent)
+		return;
+
+	if (bEnabled)
+	{
+		PerceptionStimuliSourceComponent->RegisterWithPerceptionSystem();
+	}
+	else
+	{
+		PerceptionStimuliSourceComponent->UnregisterFromPerceptionSystem();
+	}
 }
 
 UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const

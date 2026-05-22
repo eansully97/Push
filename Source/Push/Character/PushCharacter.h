@@ -7,8 +7,10 @@
 #include "GameplayTagContainer.h"
 #include "GenericTeamAgentInterface.h"
 #include "GameFramework/Character.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "PushCharacter.generated.h"
 
+class UAIPerceptionStimuliSourceComponent;
 class UWidgetComponent;
 class UPushAbilitySystemComponent;
 class UPushAttributeSet;
@@ -99,4 +101,14 @@ public:
 private:
 	UPROPERTY(Replicated)
 	FGenericTeamId TeamID;
+
+	/*
+	*	AI
+	*/
+private:
+	void SetAIPerceptionStimuliSourceEnabled(bool bEnabled);
+	
+	UPROPERTY()
+	UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
 };
+

@@ -39,6 +39,7 @@ private:
 
 	const UObject* GetCurrentTarget() const;
 	void SetCurrentTarget(AActor* NewTarget);
+	void ForgetActorIfDead(AActor* ActorToForget);
 
 	AActor* GetNextPerceivedActor() const;
 };
