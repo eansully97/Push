@@ -26,6 +26,7 @@ APushCharacter::APushCharacter()
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverheadWidgetComponent");
 	OverheadWidgetComponent->SetupAttachment(GetRootComponent());
+	OverheadWidgetComponent->SetHiddenInGame(true);
 
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>("AI Perception Stimulus Source Component");
 

@@ -14,6 +14,8 @@ UCLASS()
 class PUSH_API UPushGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
+	
+public:
 
 protected:
 	UAnimInstance* GetOwnerAnimInstance() const;
