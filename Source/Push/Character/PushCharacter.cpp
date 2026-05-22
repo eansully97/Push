@@ -121,11 +121,11 @@ void APushCharacter::ConfigureOverheadWidget()
 
 void APushCharacter::UpdateOverheadWidgetVisibility()
 {
-	APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (LocalPlayerPawn)
+	if (APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
 	{
-		float DistSq = FVector::DistSquared(GetActorLocation(), LocalPlayerPawn->GetActorLocation());
-		OverheadWidgetComponent->SetHiddenInGame(DistSq > OverheadWidgetVisibilityRangeSq);
+		const float DistSq = FVector::DistSquared(GetActorLocation(), LocalPlayerPawn->GetActorLocation());
+		const bool bEnabled = DistSq > OverheadWidgetVisibilityRangeSq;
+		OverheadWidgetComponent->SetHiddenInGame(bEnabled);
 
 		/*
 		 *	Conceptual: Scale Widget with Distance
@@ -151,9 +151,28 @@ void APushCharacter::SetStatusGaugeEnabled(bool bEnabled)
 	}
 }
 
+bool APushCharacter::IsDead() const
+{
+	return GetAbilitySystemComponent()->HasMatchingGameplayTag(UPushAbilitySystemStatics::GetDeadStateTag());
+}
+
+void APushCharacter::RespawnImmediately()
+{
+	if (HasAuthority())
+	{
+		GetAbilitySystemComponent()->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(UPushAbilitySystemStatics::GetDeadStateTag()));
+	}
+}
+
 void APushCharacter::StartDeathSequence()
 {
 	OnDead();
+
+	if (PushAbilitySystemComponent)
+	{
+		PushAbilitySystemComponent->CancelAllAbilities();
+	}
+	
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false);
 	GetCharacterMovement()->SetMovementMode(MOVE_None);
@@ -203,6 +222,9 @@ void APushCharacter::Respawn()
 
 void APushCharacter::DeathMontageFinished()
 {
+	if (!IsDead())
+		return;
+	
 	SetRagdollEnabled(true);
 }
 
@@ -241,6 +263,11 @@ void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)
 FGenericTeamId APushCharacter::GetGenericTeamId() const
 {
 	return TeamID;
+}
+
+void APushCharacter::OnRep_TeamID()
+{
+	//Override in child class
 }
 
 void APushCharacter::SetAIPerceptionStimuliSourceEnabled(bool bEnabled)

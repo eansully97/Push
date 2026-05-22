@@ -15,8 +15,9 @@ UCLASS()
 class PUSH_API UOverheadWidget : public UUserWidget
 {
 	GENERATED_BODY()
+	
 public:
-	void ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent);
+	void ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent) const;
 
 private:
 	UPROPERTY(meta = (BindWidget))

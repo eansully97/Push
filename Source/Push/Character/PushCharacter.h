@@ -72,6 +72,9 @@ private:
 	/*
 	*	Death and Respawn
 	*/
+public:
+	bool IsDead() const;
+	void RespawnImmediately();
 private:
 	void StartDeathSequence();
 	void PlayDeathAnimation();
@@ -99,8 +102,11 @@ public:
 	virtual FGenericTeamId GetGenericTeamId() const override;
 
 private:
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_TeamID)
 	FGenericTeamId TeamID;
+
+	UFUNCTION()
+	virtual void OnRep_TeamID();
 
 	/*
 	*	AI

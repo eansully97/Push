@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "GameplayTagContainer.h"
 #include "PushAIController.generated.h"
 
 UCLASS()
@@ -42,5 +43,10 @@ private:
 	void ForgetActorIfDead(AActor* ActorToForget);
 
 	AActor* GetNextPerceivedActor() const;
+
+	void ClearAndDisableAllSenses();
+	void EnableAllSenses();
+	
+	void PawnDeadGameplayTagUpdated(const FGameplayTag Tag, int32 Count); 
 };
 

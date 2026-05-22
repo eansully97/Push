@@ -6,7 +6,7 @@
 #include "ValueGauge.h"
 #include "Push/GAS/PushAttributeSet.h"
 
-void UOverheadWidget::ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent)
+void UOverheadWidget::ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent) const
 {
 	if (AbilitySystemComponent)
 	{
