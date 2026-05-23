@@ -22,6 +22,9 @@ class PUSH_API UValueGauge : public UUserWidget
 	
 public:
 	virtual void NativePreConstruct() override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetBarColor(const FLinearColor& NewColor);
 	
 	void SetAndBoundToGameplayAttribute(UAbilitySystemComponent* AbilitySystemComponent, const FGameplayAttribute& Attribute, const FGameplayAttribute& MaxAttribute);
 	void SetValue(const float NewValue, const float NewMaxValue);

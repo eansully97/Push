@@ -26,7 +26,6 @@ APushCharacter::APushCharacter()
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverheadWidgetComponent");
 	OverheadWidgetComponent->SetupAttachment(GetRootComponent());
-	OverheadWidgetComponent->SetHiddenInGame(true);
 
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>("AI Perception Stimulus Source Component");
 
@@ -50,8 +49,8 @@ void APushCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	ConfigureOverheadWidget();
+	
 	RelativeMeshTransform = GetMesh()->GetRelativeTransform();
-
 	PerceptionStimuliSourceComponent->RegisterForSense(UAISense_Sight::StaticClass());
 }
 
@@ -102,20 +101,32 @@ void APushCharacter::ConfigureOverheadWidget()
 	if (!OverheadWidgetComponent)
 		return;
 
+	// Start hidden ALWAYS
+	OverheadWidgetComponent->SetHiddenInGame(true);
+
 	if (IsLocallyControlledByPlayer())
 	{
-		OverheadWidgetComponent->SetHiddenInGame(true);
 		return;
 	}
-	
-	UOverheadWidget* OverheadWidget = Cast<UOverheadWidget>(OverheadWidgetComponent->GetUserWidgetObject());
+
+	UOverheadWidget* OverheadWidget =
+		Cast<UOverheadWidget>(OverheadWidgetComponent->GetUserWidgetObject());
 
 	if (OverheadWidget)
 	{
 		OverheadWidget->ConfigureWithASC(GetAbilitySystemComponent());
-		OverheadWidgetComponent->SetHiddenInGame(false);
+
 		GetWorldTimerManager().ClearTimer(OverheadWidgetVisibilityUpdateTimerHandle);
-		GetWorldTimerManager().SetTimer(OverheadWidgetVisibilityUpdateTimerHandle, this, &ThisClass::UpdateOverheadWidgetVisibility, OverheadWidgetVisibilityCheckInterval, true);
+
+		// Force an immediate update BEFORE timer starts
+		UpdateOverheadWidgetVisibility();
+
+		GetWorldTimerManager().SetTimer(
+			OverheadWidgetVisibilityUpdateTimerHandle,
+			this,
+			&ThisClass::UpdateOverheadWidgetVisibility,
+			OverheadWidgetVisibilityCheckInterval,
+			true);
 	}
 }
 
@@ -123,18 +134,14 @@ void APushCharacter::UpdateOverheadWidgetVisibility()
 {
 	if (APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
 	{
-		const float DistSq = FVector::DistSquared(GetActorLocation(), LocalPlayerPawn->GetActorLocation());
-		const bool bEnabled = DistSq > OverheadWidgetVisibilityRangeSq;
-		OverheadWidgetComponent->SetHiddenInGame(bEnabled);
+		const float DistSq =
+			FVector::DistSquared(GetActorLocation(),
+								 LocalPlayerPawn->GetActorLocation());
 
-		/*
-		 *	Conceptual: Scale Widget with Distance
-		 *
-		float Distance = FMath::Sqrt(DistSq);
-		float Scale = FMath::GetMappedRangeValueClamped(FVector2D(500.f,5000.f), FVector2D(1.f, .4f), Distance);
-		OverheadWidgetComponent->SetWorldScale3D(FVector(Scale));
-		*/
-		
+		const bool bShouldShow =
+			DistSq <= OverheadWidgetVisibilityRangeSq;
+
+		OverheadWidgetComponent->SetHiddenInGame(!bShouldShow);
 	}
 }
 

@@ -10,10 +10,31 @@
 void UValueGauge::NativePreConstruct()
 {
 	Super::NativePreConstruct();
-	ProgressBar->SetFillColorAndOpacity(BarColor);
 
-	ValueText->SetVisibility(bValueTextVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
-	ProgressBar->SetVisibility(bValueBarVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	if (ProgressBar)
+	{
+		ProgressBar->SetFillColorAndOpacity(BarColor);
+	}
+
+	if (ValueText)
+	{
+		ValueText->SetVisibility(bValueTextVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+
+	if (ProgressBar)
+	{
+		ProgressBar->SetVisibility(bValueBarVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+	}
+}
+
+void UValueGauge::SetBarColor(const FLinearColor& NewColor)
+{
+	BarColor = NewColor;
+
+	if (ProgressBar)
+	{
+		ProgressBar->SetFillColorAndOpacity(BarColor);
+	}
 }
 
 void UValueGauge::SetAndBoundToGameplayAttribute(UAbilitySystemComponent* AbilitySystemComponent,

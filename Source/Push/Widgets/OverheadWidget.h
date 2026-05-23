@@ -18,6 +18,7 @@ class PUSH_API UOverheadWidget : public UUserWidget
 	
 public:
 	void ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent) const;
+	void SetObservedActor(AActor* ObservedActor) const;
 
 private:
 	UPROPERTY(meta = (BindWidget))

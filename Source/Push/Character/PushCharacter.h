@@ -61,7 +61,7 @@ private:
 	FTimerHandle OverheadWidgetVisibilityUpdateTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "OverheadWidget")
-	float OverheadWidgetVisibilityCheckInterval = 1.f;
+	float OverheadWidgetVisibilityCheckInterval = .12f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "OverheadWidget")
 	float OverheadWidgetVisibilityRangeSq = 1000000.f;
