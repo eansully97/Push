@@ -75,6 +75,7 @@ private:
 public:
 	bool IsDead() const;
 	void RespawnImmediately();
+	
 private:
 	void StartDeathSequence();
 	void PlayDeathAnimation();

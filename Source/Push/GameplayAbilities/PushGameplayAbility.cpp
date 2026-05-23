@@ -3,8 +3,20 @@
 
 #include "PushGameplayAbility.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "StatusAbilities/GA_Status_Launched.h"
 
+
+ACharacter* UPushGameplayAbility::GetOwningAvatarCharacter()
+{
+	if (!AvatarCharacter)
+	{
+		AvatarCharacter = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	}
+	return AvatarCharacter;
+}
 
 UAnimInstance* UPushGameplayAbility::GetOwnerAnimInstance() const
 {
@@ -66,4 +78,35 @@ TArray<FHitResult> UPushGameplayAbility::GetHitResultFromSweepLocationTargetData
 	}
 	
 	return OutHitResults;
+}
+
+void UPushGameplayAbility::PushSelf(const FVector& PushVelocity)
+{
+	if (ACharacter* OwningAvatarCharacter = GetOwningAvatarCharacter())
+	{
+		OwningAvatarCharacter->LaunchCharacter(PushVelocity, true, true);
+	}
+}
+
+void UPushGameplayAbility::PushTarget(AActor* Target, const FVector& PushVelocity)
+{
+	if (!Target) return;
+
+	FGameplayEventData EventData;
+
+	FGameplayAbilityTargetData_SingleTargetHit* HitData = new FGameplayAbilityTargetData_SingleTargetHit;
+
+	FHitResult HitResult;
+	HitResult.ImpactNormal = PushVelocity.GetSafeNormal();
+
+	HitData->HitResult = HitResult;
+
+	EventData.TargetData.Add(HitData);
+	EventData.EventMagnitude = PushVelocity.Size();
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
+		Target,
+		UGA_Status_Launched::GetLaunchAbilityActivationTag(),
+		EventData
+	);
 }
