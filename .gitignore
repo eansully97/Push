@@ -1,17 +1,20 @@
 # Visual Studio 2015 user specific files
 .vs/
 
-# Content
-Content/Collections
-Content/Cosmetics
-Content/Developers
-Content/Fonts
-Content/Maps
-Content/Megascans
-Content/Models
-Content/MSPresets
-Content/ParagonCountess
-Content/ParagonCrunch
+# Ignore everything in Content
+Content/**
+
+# Re-include wanted root folders
+!Content/AI/
+!Content/Characters/
+!Content/Framework/
+!Content/GameplayAbilities/
+!Content/GameplayCueNotifies/
+!Content/Input/
+!Content/Player/
+!Content/Widgets/
+
+# Re-include their contents
 !Content/AI/**
 !Content/Characters/**
 !Content/Framework/**
