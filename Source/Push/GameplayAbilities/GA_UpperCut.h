@@ -25,7 +25,10 @@ private:
 	float AbilitySweepRadius = 80.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
-	float UpperCutLaunchSpeed = 1000.f;
+	float UpLaunchSpeed = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	TSubclassOf<UGameplayEffect> DamageEffect;
 	
 	static FGameplayTag GetUpperCutLaunchTag();
 

@@ -6,8 +6,14 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Push/PushGameplayTags.h"
 #include "StatusAbilities/GA_Status_Launched.h"
 
+
+UPushGameplayAbility::UPushGameplayAbility()
+{
+	ActivationBlockedTags.AddTag(PushGameplayTags::Status_Stun);
+}
 
 ACharacter* UPushGameplayAbility::GetOwningAvatarCharacter()
 {
@@ -78,6 +84,19 @@ TArray<FHitResult> UPushGameplayAbility::GetHitResultFromSweepLocationTargetData
 	}
 	
 	return OutHitResults;
+}
+
+void UPushGameplayAbility::ApplyGameplayEffectToHitResultActor(const FHitResult& HitResult,
+	TSubclassOf<UGameplayEffect> Effect, int32 Level)
+{
+	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(Effect, Level);
+
+	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo());
+	EffectContextHandle.AddHitResult(HitResult);
+
+	EffectSpecHandle.Data->SetContext(EffectContextHandle);
+
+	ApplyGameplayEffectSpecToTarget(GetCurrentAbilitySpecHandle(), CurrentActorInfo, CurrentActivationInfo, EffectSpecHandle, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(HitResult.GetActor()));
 }
 
 void UPushGameplayAbility::PushSelf(const FVector& PushVelocity)

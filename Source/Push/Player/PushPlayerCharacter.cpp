@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -117,20 +118,52 @@ void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionVal
 	}
 }
 
-void APushPlayerCharacter::OnDeath()
+void APushPlayerCharacter::SetInputEnabledFromPlayerController(bool bEnabled)
 {
 	if (APlayerController* OwningController = GetController<APlayerController>())
 	{
-		DisableInput(OwningController);
+		if (bEnabled)
+		{
+			EnableInput(OwningController);
+		}
+		else
+		{
+			DisableInput(OwningController);
+		}
 	}
+}
+
+void APushPlayerCharacter::OnDead()
+{
+	SetInputEnabledFromPlayerController(false);
 }
 
 void APushPlayerCharacter::OnRespawn()
 {
-	if (APlayerController* OwningController = GetController<APlayerController>())
-	{
-		EnableInput(OwningController);
-	}
+	SetInputEnabledFromPlayerController(true);
+}
+
+void APushPlayerCharacter::OnStun()
+{
+	SetInputEnabledFromPlayerController(false);
+}
+
+void APushPlayerCharacter::StunRemoved()
+{
+	if (IsDead())
+		return;
+	
+	SetInputEnabledFromPlayerController(true);
+}
+
+void APushPlayerCharacter::OnStealth()
+{
+	SetOverheadWidgetVisibility(false);
+}
+
+void APushPlayerCharacter::StealthRemoved()
+{
+	SetOverheadWidgetVisibility(true);
 }
 
 FVector APushPlayerCharacter::GetLookRightDirection() const

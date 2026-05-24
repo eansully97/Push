@@ -32,6 +32,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "AI Behavior")
 	UBehaviorTree* BehaviorTree;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = "AI Behavior")
+	bool bIsPawnDead;
+
 	UFUNCTION()
 	void TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus);
 
@@ -47,6 +50,7 @@ private:
 	void ClearAndDisableAllSenses();
 	void EnableAllSenses();
 	
-	void PawnDeadGameplayTagUpdated(const FGameplayTag Tag, int32 Count); 
+	void PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count);
+	void PawnStunTagUpdated(const FGameplayTag Tag, int32 Count);
 };
 

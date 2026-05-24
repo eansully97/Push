@@ -8,7 +8,7 @@
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
-#include "Push/GAS/PushAbilitySystemStatics.h"
+#include "Push/PushGameplayTags.h"
 
 APushAIController::APushAIController()
 {
@@ -45,7 +45,7 @@ void APushAIController::OnPossess(APawn* InPawn)
 	UAbilitySystemComponent* PawnASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetPawn());
 	if (PawnASC)
 	{
-		PawnASC->RegisterGameplayTagEvent(UPushAbilitySystemStatics::GetDeadStateTag()).AddUObject(this, &ThisClass::PawnDeadGameplayTagUpdated);
+		PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).AddUObject(this, &ThisClass::PawnStunTagUpdated);
 	}
 }
 
@@ -115,7 +115,7 @@ void APushAIController::ForgetActorIfDead(AActor* ActorToForget)
 	if (!ActorASC)
 		return;
 
-	if (ActorASC->HasMatchingGameplayTag(UPushAbilitySystemStatics::GetDeadStateTag()))
+	if (ActorASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun))
 	{
 		for (UAIPerceptionComponent::TActorPerceptionContainer::TIterator Iter = AIPerceptionComponent->GetPerceptualDataIterator(); Iter; ++Iter)
 		{
@@ -169,16 +169,33 @@ void APushAIController::EnableAllSenses()
 	}
 }
 
-void APushAIController::PawnDeadGameplayTagUpdated(const FGameplayTag Tag, int32 Count)
+void APushAIController::PawnStunTagUpdated(const FGameplayTag Tag, int32 Count)
+{
+	if (bIsPawnDead)
+		return;
+
+	if (Count != 0)
+	{
+		GetBrainComponent()->StopLogic("Stun");
+	}
+	else
+	{
+		GetBrainComponent()->StartLogic();
+	}
+}
+
+void APushAIController::PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	if (Count != 0)
 	{
 		GetBrainComponent()->StopLogic("Dead");
 		ClearAndDisableAllSenses();
+		bIsPawnDead = true;
 	}
 	else
 	{
 		GetBrainComponent()->StartLogic();
 		EnableAllSenses();
+		bIsPawnDead = false;
 	}
 }

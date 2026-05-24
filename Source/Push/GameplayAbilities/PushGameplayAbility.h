@@ -16,6 +16,8 @@ class PUSH_API UPushGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 	
 public:
+	UPushGameplayAbility();
+	
 	ACharacter* GetOwningAvatarCharacter();
 
 protected:
@@ -32,6 +34,7 @@ protected:
 	UFUNCTION()
 	FORCEINLINE bool ShouldDrawDebug() const { return bShouldDrawDebug; }
 
+	void ApplyGameplayEffectToHitResultActor(const FHitResult& HitResult, TSubclassOf<UGameplayEffect> Effect, int32 Level = 1);
 	void PushSelf(const FVector& PushVelocity);
 	void PushTarget(AActor* Target, const FVector& PushVelocity);
 

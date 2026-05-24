@@ -10,8 +10,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "Push/PushGameplayTags.h"
 #include "Push/GAS/PushAbilitySystemComponent.h"
-#include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Push/GAS/PushAttributeSet.h"
 #include "Push/Widgets/OverheadWidget.h"
 
@@ -75,7 +75,9 @@ void APushCharacter::BindChangeDelegates()
 {
 	if (PushAbilitySystemComponent)
 	{
-		PushAbilitySystemComponent->RegisterGameplayTagEvent(UPushAbilitySystemStatics::GetDeadStateTag()).AddUObject(this, &ThisClass::DeathTagUpdated);
+		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::DeathTagUpdated);
+		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).AddUObject(this, &ThisClass::StunTagUpdated);
+		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).AddUObject(this, &ThisClass::StealthTagUpdated);
 	}
 }
 
@@ -88,6 +90,35 @@ void APushCharacter::DeathTagUpdated(FGameplayTag Tag, int32 Count)
 	else
 	{
 		Respawn();
+	}
+}
+
+void APushCharacter::StunTagUpdated(FGameplayTag Tag, int32 Count)
+{
+	if (IsDead())
+		return;
+
+	if (Count != 0)
+	{
+		OnStun();
+		PlayAnimMontage(StunMontage);
+	}
+	else
+	{
+		StunRemoved();
+		StopAnimMontage(StunMontage);
+	}
+}
+
+void APushCharacter::StealthTagUpdated(FGameplayTag Tag, int32 Count)
+{
+	if (Count != 0)
+	{
+		OnStealth();
+	}
+	else
+	{
+		StealthRemoved();
 	}
 }
 
@@ -130,8 +161,16 @@ void APushCharacter::ConfigureOverheadWidget()
 	}
 }
 
+void APushCharacter::SetOverheadWidgetVisibility(bool bVisible)
+{
+	OverheadWidgetComponent->SetHiddenInGame(bVisible);
+}
+
 void APushCharacter::UpdateOverheadWidgetVisibility()
 {
+	if (IsInStealth())
+		return;
+	
 	if (APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
 	{
 		const float DistSq =
@@ -160,14 +199,14 @@ void APushCharacter::SetStatusGaugeEnabled(bool bEnabled)
 
 bool APushCharacter::IsDead() const
 {
-	return GetAbilitySystemComponent()->HasMatchingGameplayTag(UPushAbilitySystemStatics::GetDeadStateTag());
+	return GetAbilitySystemComponent()->HasMatchingGameplayTag(PushGameplayTags::Status_Dead);
 }
 
 void APushCharacter::RespawnImmediately()
 {
 	if (HasAuthority())
 	{
-		GetAbilitySystemComponent()->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(UPushAbilitySystemStatics::GetDeadStateTag()));
+		GetAbilitySystemComponent()->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Dead));
 	}
 }
 
@@ -260,6 +299,31 @@ void APushCharacter::OnDead()
 void APushCharacter::OnRespawn()
 {
 	//Override in child class
+}
+
+void APushCharacter::OnStun()
+{
+	//Override in child class
+}
+
+void APushCharacter::StunRemoved()
+{
+	//Override in child class
+}
+
+void APushCharacter::OnStealth()
+{
+	//Override in child class
+}
+
+void APushCharacter::StealthRemoved()
+{
+	//Override in child class
+}
+
+bool APushCharacter::IsInStealth() const
+{
+	return PushAbilitySystemComponent->HasMatchingGameplayTag(PushGameplayTags::Status_Stealth);
 }
 
 void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)

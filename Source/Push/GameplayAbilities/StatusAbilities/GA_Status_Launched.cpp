@@ -3,12 +3,18 @@
 
 #include "GA_Status_Launched.h"
 
+#include "Push/PushGameplayTags.h"
+
 UGA_Status_Launched::UGA_Status_Launched()
 {
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	FAbilityTriggerData TriggerData;
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 	TriggerData.TriggerTag = GetLaunchAbilityActivationTag();
+
+	ActivationOwnedTags.AddTag(PushGameplayTags::Status_Launched);
+	
+	ActivationBlockedTags.RemoveTag(PushGameplayTags::Status_Stun);
 
 	AbilityTriggers.Add(TriggerData);
 }
@@ -44,5 +50,5 @@ void UGA_Status_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 FGameplayTag UGA_Status_Launched::GetLaunchAbilityActivationTag()
 {
-	return FGameplayTag::RequestGameplayTag("Ability.Status.Launched");
+	return PushGameplayTags::Event_Status_Launched;
 }

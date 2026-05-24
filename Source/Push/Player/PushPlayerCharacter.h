@@ -26,6 +26,9 @@ public:
 	void SetCachedMaterials();
 
 	FVector GetMovementInputDirection() const;
+	FVector GetLookRightDirection() const;
+	FVector GetLookForwardDirection() const;
+	FVector GetMoveForwardDirection() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -45,10 +48,6 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Materials")
 	TArray<UMaterialInterface*> CachedMaterials;
- 
-	FVector GetLookRightDirection() const;
-	FVector GetLookForwardDirection() const;
-	FVector GetMoveForwardDirection() const;
 
 	/*
 	*	Input
@@ -73,10 +72,23 @@ private:
 	void HandleLookInput(const FInputActionValue& ActionValue);
 	void HandleMoveInput(const FInputActionValue& ActionValue);
 	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
+	void SetInputEnabledFromPlayerController(bool bEnabled);
 
 	/*
 	*	Death and Respawn
 	*/
-	virtual void OnDeath();
-	virtual void OnRespawn();
+	virtual void OnDead() override;
+	virtual void OnRespawn() override;
+
+	/*
+	*	Stun
+	*/
+	virtual void OnStun() override;
+	virtual void StunRemoved() override;
+
+	/*
+	*	Stun
+	*/
+	virtual void OnStealth() override;
+	virtual void StealthRemoved() override;
 };

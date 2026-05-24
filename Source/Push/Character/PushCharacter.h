@@ -41,6 +41,8 @@ protected:
 private:
 	void BindChangeDelegates();
 	void DeathTagUpdated(FGameplayTag Tag, int32 Count);
+	void StunTagUpdated(FGameplayTag Tag, int32 Count);
+	void StealthTagUpdated(FGameplayTag Tag, int32 Count);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;
@@ -53,6 +55,7 @@ private:
 	*/
 public:
 	void ConfigureOverheadWidget();
+	void SetOverheadWidgetVisibility(bool bVisible);
 	
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Widgets")
@@ -95,6 +98,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	float DeathMontageFinishTimeShift = -0.8f;
 
+	/*
+	*	Stun
+	*/
+private:
+	virtual void OnStun();
+	virtual void StunRemoved();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stun")
+	UAnimMontage* StunMontage;
+
+	/*
+	*	Stealth
+	*/
+private:
+	virtual void OnStealth();
+	virtual void StealthRemoved();
+	bool IsInStealth() const;
+	
 	/*
 	*	Generic Team Agent Interface
 	*/

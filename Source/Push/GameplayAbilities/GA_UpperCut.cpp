@@ -5,6 +5,8 @@
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "Push/PushGameplayTags.h"
+#include "Push/Player/PushPlayerCharacter.h"
 
 void UGA_UpperCut::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
                                    const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -32,7 +34,7 @@ void UGA_UpperCut::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 FGameplayTag UGA_UpperCut::GetUpperCutLaunchTag()
 {
-	return FGameplayTag::RequestGameplayTag("Ability.UpperCut.Launch");
+	return PushGameplayTags::Ability_Event_Status_Launched;
 }
 
 void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
@@ -40,10 +42,11 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 	if (K2_HasAuthority())
 	{
 		TArray<FHitResult> TargetHitResults = GetHitResultFromSweepLocationTargetData(EventData.TargetData, AbilitySweepRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
-		PushTarget(GetAvatarActorFromActorInfo(), FVector::UpVector * UpperCutLaunchSpeed);
+		PushTarget(GetAvatarActorFromActorInfo(),FVector::UpVector * UpLaunchSpeed);
 		for (FHitResult& HitResult : TargetHitResults)
 		{
-			PushTarget(HitResult.GetActor(), FVector::UpVector * UpperCutLaunchSpeed);
+			PushTarget(HitResult.GetActor(),FVector::UpVector * UpLaunchSpeed);
+			ApplyGameplayEffectToHitResultActor(HitResult, DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 		}
 	}
 }
