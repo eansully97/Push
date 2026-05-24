@@ -21,6 +21,8 @@ class PUSH_API APushPlayerCharacter : public APushCharacter
 public:
 	APushPlayerCharacter();
 
+	FVector GetMovementInputDirection() const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

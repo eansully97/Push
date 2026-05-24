@@ -126,3 +126,15 @@ FVector APushPlayerCharacter::GetMoveForwardDirection() const
 {
 	return FVector::CrossProduct(GetLookRightDirection(), FVector::UpVector);
 }
+
+FVector APushPlayerCharacter::GetMovementInputDirection() const
+{
+	const FVector PendingInput = GetPendingMovementInputVector();
+
+	if (!PendingInput.IsNearlyZero())
+	{
+		return PendingInput.GetSafeNormal();
+	}
+
+	return GetLastMovementInputVector().GetSafeNormal();
+}
