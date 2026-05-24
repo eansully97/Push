@@ -20,6 +20,10 @@ class PUSH_API APushPlayerCharacter : public APushCharacter
 
 public:
 	APushPlayerCharacter();
+	void CacheMaterials();
+	
+	UFUNCTION(BlueprintCallable)
+	void SetCachedMaterials();
 
 	FVector GetMovementInputDirection() const;
 
@@ -39,6 +43,9 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "View")
 	UCameraComponent* ViewCamera;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = "Materials")
+	TArray<UMaterialInterface*> CachedMaterials;
+ 
 	FVector GetLookRightDirection() const;
 	FVector GetLookForwardDirection() const;
 	FVector GetMoveForwardDirection() const;

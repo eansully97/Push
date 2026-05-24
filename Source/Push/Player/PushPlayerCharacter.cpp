@@ -25,10 +25,31 @@ APushPlayerCharacter::APushPlayerCharacter()
 	
 }
 
+void APushPlayerCharacter::CacheMaterials()
+{
+	if (!GetMesh())
+	{
+		return;
+	}
+
+	CachedMaterials = GetMesh()->GetMaterials();
+}
+
+void APushPlayerCharacter::SetCachedMaterials()
+{
+	int32 Index = 0;
+	for (const auto& CachedMaterial : CachedMaterials)
+	{
+		GetMesh()->SetMaterial(Index, CachedMaterial);
+		++Index;
+	}
+}
+
 void APushPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	CacheMaterials();
 }
 
 void APushPlayerCharacter::Tick(float DeltaTime)
