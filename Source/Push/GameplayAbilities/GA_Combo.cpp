@@ -52,7 +52,7 @@ void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 FGameplayTag UGA_Combo::GetComboChangedEventTag()
 {
-	return FGameplayTag::RequestGameplayTag("Ability.Combo.Change");
+	return PushGameplayTags::Ability_Combo_Change;
 }
 
 FGameplayTag UGA_Combo::GetComboChangedEventEndTag()

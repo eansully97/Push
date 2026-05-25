@@ -3,6 +3,7 @@
 
 #include "PushPlayerCharacter.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -10,6 +11,7 @@
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Push/PushGameplayTags.h"
 
 APushPlayerCharacter::APushPlayerCharacter()
 {
@@ -115,6 +117,12 @@ void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionVal
 	else
 	{
 		GetAbilitySystemComponent()->AbilityLocalInputReleased(static_cast<int32>(AbilityInputID));
+	}
+
+	if (AbilityInputID == EAbilityInputID::BasicAttack)
+	{
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());
+		Server_SendGameplayEventToSelf(PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());
 	}
 }
 

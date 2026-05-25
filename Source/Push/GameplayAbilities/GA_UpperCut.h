@@ -15,6 +15,8 @@ class PUSH_API UGA_UpperCut : public UPushGameplayAbility
 	GENERATED_BODY()
 
 public:
+	UGA_UpperCut();
+	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 private:
@@ -34,4 +36,12 @@ private:
 
 	UFUNCTION()
 	void StartLaunching(FGameplayEventData EventData);
+
+	UFUNCTION()
+	void HandleComboChangeEvent(FGameplayEventData EventData);
+
+	UFUNCTION()
+	void HandleComboCommitEvent(FGameplayEventData EventData);
+
+	FName NextComboName;
 };

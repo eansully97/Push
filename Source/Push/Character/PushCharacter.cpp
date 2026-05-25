@@ -3,6 +3,7 @@
 
 #include "PushCharacter.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -81,7 +82,7 @@ void APushCharacter::BindChangeDelegates()
 	}
 }
 
-void APushCharacter::DeathTagUpdated(FGameplayTag Tag, int32 Count)
+void APushCharacter::DeathTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	if (Count != 0)
 	{
@@ -93,7 +94,7 @@ void APushCharacter::DeathTagUpdated(FGameplayTag Tag, int32 Count)
 	}
 }
 
-void APushCharacter::StunTagUpdated(FGameplayTag Tag, int32 Count)
+void APushCharacter::StunTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	if (IsDead())
 		return;
@@ -110,7 +111,7 @@ void APushCharacter::StunTagUpdated(FGameplayTag Tag, int32 Count)
 	}
 }
 
-void APushCharacter::StealthTagUpdated(FGameplayTag Tag, int32 Count)
+void APushCharacter::StealthTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	if (Count != 0)
 	{
@@ -359,4 +360,16 @@ void APushCharacter::SetAIPerceptionStimuliSourceEnabled(bool bEnabled)
 UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const
 {
 	return PushAbilitySystemComponent;
+}
+
+bool APushCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
+	const FGameplayEventData& EventData)
+{
+	return true;
+}
+
+void APushCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayTag& EventTag,
+                                                                   const FGameplayEventData& EventData)
+{
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
 }

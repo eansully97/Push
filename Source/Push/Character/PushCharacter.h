@@ -6,6 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
 #include "GenericTeamAgentInterface.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "GameFramework/Character.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "PushCharacter.generated.h"
@@ -35,14 +36,17 @@ protected:
 	/*
 	 *	GAS
 	 */
-protected:
+public:
 	 virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
 	 
 private:
 	void BindChangeDelegates();
-	void DeathTagUpdated(FGameplayTag Tag, int32 Count);
-	void StunTagUpdated(FGameplayTag Tag, int32 Count);
-	void StealthTagUpdated(FGameplayTag Tag, int32 Count);
+	void DeathTagUpdated(const FGameplayTag Tag, int32 Count);
+	void StunTagUpdated(const FGameplayTag Tag, int32 Count);
+	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;

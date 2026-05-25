@@ -18,6 +18,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Damage);
 
 	// Ability.Combo.Change
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo02);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo03);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo04);
@@ -28,6 +29,9 @@ namespace PushGameplayTags
 
 	// Ability.Events
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Event_Status_Launched);
+
+	//Input
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_BasicAttack_Pressed);
 
 	// Event.Status
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Status_Stealth);

@@ -11,6 +11,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Combo_Damage, "Ability.Combo.Damage");
 
 	// Ability.Combo.Change
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Combo_Change, "Ability.Combo.Change");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Combo_Change_Combo02, "Ability.Combo.Change.Combo02");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Combo_Change_Combo03, "Ability.Combo.Change.Combo03");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Combo_Change_Combo04, "Ability.Combo.Change.Combo04");
@@ -22,6 +23,9 @@ namespace PushGameplayTags
 	// Ability.Events
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Event_Status_Launched, "Ability.Event.Status.Launched");
 
+	//Input
+	UE_DEFINE_GAMEPLAY_TAG(Input_Ability_BasicAttack_Pressed, "Input.Ability.BasicAttack.Pressed");
+	
 	// Event.Status
 	UE_DEFINE_GAMEPLAY_TAG(Event_Status_Launched, "Event.Status.Launched");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Status_Stealth, "Event.Status.Stealth");
