@@ -3,6 +3,8 @@
 
 #include "PushAbilitySystemComponent.h"
 
+#include "Push/PushGameplayTags.h"
+#include "Push/GameplayAbilities/GA_Infiltrate.h"
 #include "PushAttributeSet.h"
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
@@ -42,6 +44,27 @@ void UPushAbilitySystemComponent::ApplyFullStatEffect()
 	AuthApplyGameplayEffect(FullStatEffect);
 }
 
+void UPushAbilitySystemComponent::AuthBreakStealth()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
+	if (!HasMatchingGameplayTag(PushGameplayTags::Status_Stealth))
+		return;
+
+	RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Stealth));
+}
+
+void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
+{
+	Super::NotifyAbilityActivated(Handle, Ability);
+
+	if (ShouldAbilityActivationBreakStealth(Handle, Ability))
+	{
+		AuthBreakStealth();
+	}
+}
+
 void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& ChangeData)
 {
 	if (!GetOwner()) return;
@@ -59,4 +82,22 @@ void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayE
 	
 	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingSpec(GameplayEffect, Level, MakeEffectContext());
 	ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
+}
+
+bool UPushAbilitySystemComponent::ShouldAbilityActivationBreakStealth(
+	const FGameplayAbilitySpecHandle Handle,
+	const UGameplayAbility* Ability) const
+{
+	if (!Ability || Ability->IsA(UGA_Infiltrate::StaticClass()))
+		return false;
+
+	const FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromHandle(Handle);
+	if (!AbilitySpec)
+		return false;
+
+	const int32 BasicAttackInputID = static_cast<int32>(EAbilityInputID::BasicAttack);
+	const int32 Ability6InputID = static_cast<int32>(EAbilityInputID::Ability6);
+
+	return AbilitySpec->InputID >= BasicAttackInputID
+		&& AbilitySpec->InputID <= Ability6InputID;
 }

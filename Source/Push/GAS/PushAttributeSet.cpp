@@ -5,6 +5,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "PushAbilitySystemComponent.h"
 
 void UPushAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -32,7 +33,16 @@ void UPushAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 {
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
+		const bool bTookDamage = Data.EvaluatedData.Magnitude < 0.f;
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+		
+		if (bTookDamage)
+		{
+			if (UPushAbilitySystemComponent* PushASC = Cast<UPushAbilitySystemComponent>(&Data.Target))
+			{
+				PushASC->AuthBreakStealth();
+			}
+		}
 	}
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{

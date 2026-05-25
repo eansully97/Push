@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Push/PushGameplayTags.h"
+#include "Push/GAS/PushAbilitySystemComponent.h"
 #include "StatusAbilities/GA_Status_Launched.h"
 
 
@@ -96,7 +97,21 @@ void UPushGameplayAbility::ApplyGameplayEffectToHitResultActor(const FHitResult&
 
 	EffectSpecHandle.Data->SetContext(EffectContextHandle);
 
-	ApplyGameplayEffectSpecToTarget(GetCurrentAbilitySpecHandle(), CurrentActorInfo, CurrentActivationInfo, EffectSpecHandle, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(HitResult.GetActor()));
+	const TArray<FActiveGameplayEffectHandle> AppliedEffectHandles =
+		ApplyGameplayEffectSpecToTarget(
+			GetCurrentAbilitySpecHandle(),
+			CurrentActorInfo,
+			CurrentActivationInfo,
+			EffectSpecHandle,
+			UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(HitResult.GetActor()));
+
+	if (!AppliedEffectHandles.IsEmpty())
+	{
+		if (UPushAbilitySystemComponent* PushASC = Cast<UPushAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
+		{
+			PushASC->AuthBreakStealth();
+		}
+	}
 }
 
 void UPushGameplayAbility::PushSelf(const FVector& PushVelocity)

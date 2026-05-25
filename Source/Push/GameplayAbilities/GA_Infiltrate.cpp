@@ -7,6 +7,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
+#include "Push/GAS/PushAbilitySystemComponent.h"
 #include "Push/Player/PushPlayerCharacter.h"
 
 class UAbilityTask_WaitGameplayTagRemoved;
@@ -61,6 +62,18 @@ void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 void UGA_Infiltrate::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	TGuardValue<bool> EndingAbilityGuard(bEndingAbility, true);
+
+	if (!bEndingFromStealthRemoval)
+	{
+		if (UPushAbilitySystemComponent* PushASC = Cast<UPushAbilitySystemComponent>(GetAbilitySystemComponentFromActorInfo()))
+		{
+			PushASC->AuthBreakStealth();
+		}
+	}
+
+	bEndingFromStealthRemoval = false;
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -157,5 +170,9 @@ void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 
 void UGA_Infiltrate::OnStealthRemoved()
 {
+	if (bEndingAbility)
+		return;
+
+	bEndingFromStealthRemoval = true;
 	K2_EndAbility();
 }

@@ -18,10 +18,14 @@ public:
 	void ApplyInitialEffects();
 	void GiveInitialAbilities();
 	void ApplyFullStatEffect();
+	void AuthBreakStealth();
+
+	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
 
 private:
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level = 1);
+	bool ShouldAbilityActivationBreakStealth(const FGameplayAbilitySpecHandle Handle, const UGameplayAbility* Ability) const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
 	TSubclassOf<UGameplayEffect> DeathEffect;

@@ -37,6 +37,9 @@ private:
 	UFUNCTION()
 	void OnStealthRemoved();
 
+	bool bEndingAbility = false;
+	bool bEndingFromStealthRemoval = false;
+
 	UPROPERTY(EditDefaultsOnly, Category="Infiltrate")
 	FGameplayTag StealthTag;
 
