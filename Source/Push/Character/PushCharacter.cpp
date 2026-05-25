@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
@@ -226,11 +227,15 @@ void APushCharacter::StartDeathSequence()
 	{
 		PushAbilitySystemComponent->CancelAllAbilities();
 	}
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->StopMovementImmediately();
+		MovementComponent->DisableMovement();
+	}
 	
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false);
-	//GetCharacterMovement()->SetMovementMode(MOVE_None); - This is probably not needed any is commented out intentionally
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetAIPerceptionStimuliSourceEnabled(false);
 }
 
@@ -245,10 +250,10 @@ void APushCharacter::PlayDeathAnimation()
 
 void APushCharacter::Respawn()
 {
+	GetWorldTimerManager().ClearTimer(DeathMontageTimerHandle);
+
 	OnRespawn();
 	SetRagdollEnabled(false);
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	//GetCharacterMovement()->SetMovementMode(MOVE_Walking); - This is probably not needed any is commented out intentionally
 
 	if (!IsInStealth())
 	{
@@ -287,18 +292,51 @@ void APushCharacter::DeathMontageFinished()
 
 void APushCharacter::SetRagdollEnabled(bool bEnabled)
 {
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+
 	if (bEnabled)
 	{
-		GetMesh()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		GetMesh()->SetSimulatePhysics(true);
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+		if (MovementComponent)
+		{
+			MovementComponent->StopMovementImmediately();
+			MovementComponent->DisableMovement();
+		}
+
+		const FTransform MeshWorldTransform = MeshComponent->GetComponentTransform();
+		const FName RagdollCollisionProfileName(TEXT("Ragdoll"));
+
+		MeshComponent->SetCollisionProfileName(RagdollCollisionProfileName);
+		MeshComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+		MeshComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+		MeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		MeshComponent->SetWorldTransform(MeshWorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
+		MeshComponent->SetAllBodiesSimulatePhysics(true);
+		MeshComponent->SetSimulatePhysics(true);
+		MeshComponent->WakeAllRigidBodies();
+		MeshComponent->bBlendPhysics = true;
+
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	else
 	{
-		GetMesh()->SetSimulatePhysics(false);
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		GetMesh()->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-		GetMesh()->SetRelativeTransform(RelativeMeshTransform);
+		MeshComponent->bBlendPhysics = false;
+		MeshComponent->SetAllBodiesSimulatePhysics(false);
+		MeshComponent->SetSimulatePhysics(false);
+		MeshComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		MeshComponent->SetRelativeTransform(RelativeMeshTransform);
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		if (MovementComponent)
+		{
+			MovementComponent->StopMovementImmediately();
+			MovementComponent->SetMovementMode(MOVE_Walking);
+		}
 	}
 }
 
