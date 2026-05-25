@@ -6,7 +6,6 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
@@ -230,7 +229,7 @@ void APushCharacter::StartDeathSequence()
 	
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false);
-	GetCharacterMovement()->SetMovementMode(MOVE_None);
+	//GetCharacterMovement()->SetMovementMode(MOVE_None); - This is probably not needed any is commented out intentionally
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetAIPerceptionStimuliSourceEnabled(false);
 }
@@ -249,7 +248,7 @@ void APushCharacter::Respawn()
 	OnRespawn();
 	SetRagdollEnabled(false);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	//GetCharacterMovement()->SetMovementMode(MOVE_Walking); - This is probably not needed any is commented out intentionally
 
 	if (!IsInStealth())
 	{

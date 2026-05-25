@@ -45,6 +45,10 @@ namespace PushGameplayTags
 
 	// GameplayCue.Hit
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Crunch_Punch, "GameplayCue.Hit.Crunch.Punch");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Basic, "GameplayCue.Hit.Countess.Basic");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Finish, "GameplayCue.Hit.Countess.Finish");
+	
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Minion, "GameplayCue.Hit.Minion");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Reaction, "GameplayCue.Hit.Reaction");
 }

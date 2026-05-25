@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "PushGameplayAbility.h"
+#include "Push/PushGameplayAbilityTypes.h"
 #include "GA_UpperCut.generated.h"
 
 /**
@@ -33,9 +34,13 @@ private:
 	float HitLaunchSpeed = 100.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
-	TSubclassOf<UGameplayEffect> DamageEffect;
+	TSubclassOf<UGameplayEffect> LaunchDamageEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combo")
+	TMap<FName, FGenericDamageEffectDef> ComboDamageMap;
 	
 	static FGameplayTag GetUpperCutLaunchTag();
+	const FGenericDamageEffectDef* GetDamageEffectDefinitionForCurrentCombo() const;
 
 	UFUNCTION()
 	void StartLaunching(FGameplayEventData EventData);

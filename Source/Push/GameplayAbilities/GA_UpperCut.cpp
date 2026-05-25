@@ -70,6 +70,17 @@ FGameplayTag UGA_UpperCut::GetUpperCutLaunchTag()
 	return PushGameplayTags::Ability_Event_Status_Launched;
 }
 
+const FGenericDamageEffectDef* UGA_UpperCut::GetDamageEffectDefinitionForCurrentCombo() const
+{
+	if (UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance())
+	{
+		FName CurrentComboName = OwnerAnimInstance->Montage_GetCurrentSection(AbilityMontage);
+		const FGenericDamageEffectDef* EffectDef = ComboDamageMap.Find(CurrentComboName);
+		return EffectDef;
+	}
+	return nullptr;
+}
+
 void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 {
 	if (K2_HasAuthority())
@@ -92,7 +103,7 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 			PushTarget(HitActor, FVector::UpVector * UppercutLaunchSpeed);
 			ApplyGameplayEffectToHitResultActor(
 				HitResult,
-				DamageEffect,
+				LaunchDamageEffect,
 				GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)
 			);
 		}
@@ -134,7 +145,6 @@ void UGA_UpperCut::HandleComboCommitEvent(FGameplayEventData EventData)
 {
 	if (NextComboName == NAME_None)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpperCut: Cannot commit combo. NextComboName is NAME_None."));
 		return;
 	}
 
@@ -165,13 +175,20 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 		PushTarget(AvatarActor, FVector::UpVector * HitLaunchSpeed);
 
+		const FGenericDamageEffectDef* EffectDef = GetDamageEffectDefinitionForCurrentCombo();
+		if (!EffectDef)
+		{
+			return;
+		}
+
 		for (FHitResult& HitResult : TargetHitResults)
 		{
+			FVector PushVelocity = GetAvatarActorFromActorInfo()->GetActorTransform().TransformVector(EffectDef->PushVelocity);
 			AActor* HitActor = HitResult.GetActor();
-			PushTarget(HitActor, FVector::UpVector * HitLaunchSpeed);
+			PushTarget(HitActor, PushVelocity);
 			ApplyGameplayEffectToHitResultActor(
 				HitResult,
-				DamageEffect,
+				EffectDef->DamageEffectClass,
 				GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)
 			);
 		}
