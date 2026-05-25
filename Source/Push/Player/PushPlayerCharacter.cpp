@@ -156,7 +156,7 @@ void APushPlayerCharacter::OnStun()
 	SetInputEnabledFromPlayerController(false);
 }
 
-void APushPlayerCharacter::StunRemoved()
+void APushPlayerCharacter::OnStunRemoved()
 {
 	if (IsDead())
 		return;
@@ -172,7 +172,7 @@ void APushPlayerCharacter::OnStealth()
 	SetOverheadWidgetVisibility(true);
 }
 
-void APushPlayerCharacter::StealthRemoved()
+void APushPlayerCharacter::OnStealthRemoved()
 {
 	if (IsLocallyControlledByPlayer())
 		return;

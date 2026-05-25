@@ -106,7 +106,7 @@ void APushCharacter::StunTagUpdated(const FGameplayTag Tag, int32 Count)
 	}
 	else
 	{
-		StunRemoved();
+		OnStunRemoved();
 		StopAnimMontage(StunMontage);
 	}
 }
@@ -120,7 +120,7 @@ void APushCharacter::StealthTagUpdated(const FGameplayTag Tag, int32 Count)
 	}
 	else
 	{
-		StealthRemoved();
+		OnStealthRemoved();
 		if (!IsDead())
 		{
 			SetAIPerceptionStimuliSourceEnabled(true);
@@ -318,7 +318,7 @@ void APushCharacter::OnStun()
 	//Override in child class
 }
 
-void APushCharacter::StunRemoved()
+void APushCharacter::OnStunRemoved()
 {
 	//Override in child class
 }
@@ -328,7 +328,7 @@ void APushCharacter::OnStealth()
 	//Override in child class
 }
 
-void APushCharacter::StealthRemoved()
+void APushCharacter::OnStealthRemoved()
 {
 	//Override in child class
 }

@@ -72,23 +72,27 @@ private:
 	void HandleLookInput(const FInputActionValue& ActionValue);
 	void HandleMoveInput(const FInputActionValue& ActionValue);
 	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
+	
 	void SetInputEnabledFromPlayerController(bool bEnabled);
 
 	/*
 	*	Death and Respawn
 	*/
+private:
 	virtual void OnDead() override;
 	virtual void OnRespawn() override;
 
 	/*
 	*	Stun
 	*/
+private:
 	virtual void OnStun() override;
-	virtual void StunRemoved() override;
+	virtual void OnStunRemoved() override;
 
 	/*
-	*	Stun
+	*	Stealth
 	*/
+private:
 	virtual void OnStealth() override;
-	virtual void StealthRemoved() override;
+	virtual void OnStealthRemoved() override;
 };

@@ -54,7 +54,7 @@ void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 				NAME_None,
 				AbilityMontage
 			);
-
+		MontageTask->OnInterrupted.AddDynamic(this, &UGA_Infiltrate::OnStealthRemoved);
 		MontageTask->ReadyForActivation();
 	}
 }
@@ -96,9 +96,11 @@ void UGA_Infiltrate::StartLaunching()
 	InputDirection.Z = 0.f;
 	InputDirection.Normalize();
 
-	const FVector LaunchVelocity =
-		(InputDirection + FVector::UpVector).GetSafeNormal() * LaunchSpeed;
+	FVector Forward = InputDirection * ForwardLaunchSpeed;
+	FVector Up = FVector::UpVector.GetSafeNormal() * UpLaunchSpeed;
 
+
+	const FVector LaunchVelocity = Forward + Up;
 	PushSelf(LaunchVelocity);
 }
 

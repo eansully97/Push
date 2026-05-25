@@ -110,7 +110,7 @@ private:
 	*/
 private:
 	virtual void OnStun();
-	virtual void StunRemoved();
+	virtual void OnStunRemoved();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stun")
 	UAnimMontage* StunMontage;
@@ -120,7 +120,7 @@ private:
 	*/
 private:
 	virtual void OnStealth();
-	virtual void StealthRemoved();
+	virtual void OnStealthRemoved();
 	bool IsInStealth() const;
 	
 	/*

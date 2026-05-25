@@ -19,6 +19,7 @@ namespace PushGameplayTags
 
 	// Ability.Cooldown
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Cooldown_Crunch_Uppercut, "Ability.Cooldown.Crunch.Uppercut");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Cooldown_Countess_Infiltrate, "Ability.Cooldown.Countess.Infiltrate");
 
 	// Ability.Events
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Event_Status_Launched, "Ability.Event.Status.Launched");

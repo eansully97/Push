@@ -23,7 +23,10 @@ private:
 	UAnimMontage* AbilityMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
-	float LaunchSpeed = 1000.f;
+	float UpLaunchSpeed = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float ForwardLaunchSpeed = 1000.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Infiltrate")
 	TSubclassOf<UGameplayEffect> StealthEffectClass;
