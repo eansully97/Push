@@ -14,8 +14,11 @@ UGA_UpperCut::UGA_UpperCut()
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
 }
 
-void UGA_UpperCut::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                                   const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UGA_UpperCut::ActivateAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
 {
 	if (!K2_CommitAbility())
 	{
@@ -52,7 +55,9 @@ void UGA_UpperCut::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		WaitComboChangeEvent->EventReceived.AddDynamic(this, &ThisClass::HandleComboChangeEvent);
 		WaitComboChangeEvent->ReadyForActivation();
 
-		UAbilityTask_WaitGameplayEvent* WaitComboCommitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed);
+		UAbilityTask_WaitGameplayEvent* WaitComboCommitEvent =
+			UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed);
+
 		WaitComboCommitEvent->EventReceived.AddDynamic(this, &ThisClass::HandleComboCommitEvent);
 		WaitComboCommitEvent->ReadyForActivation();
 	}
@@ -69,26 +74,56 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 {
 	if (K2_HasAuthority())
 	{
-		TArray<FHitResult> TargetHitResults = GetHitResultFromSweepLocationTargetData(EventData.TargetData, AbilitySweepRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
-		PushTarget(GetAvatarActorFromActorInfo(),FVector::UpVector * UpLaunchSpeed);
+		TArray<FHitResult> TargetHitResults =
+			GetHitResultFromSweepLocationTargetData(
+				EventData.TargetData,
+				AbilitySweepRadius,
+				ETeamAttitude::Hostile,
+				ShouldDrawDebug()
+			);
+
+		AActor* AvatarActor = GetAvatarActorFromActorInfo();
+
+		PushTarget(AvatarActor, FVector::UpVector * UpLaunchSpeed);
+
 		for (FHitResult& HitResult : TargetHitResults)
 		{
-			PushTarget(HitResult.GetActor(),FVector::UpVector * UpLaunchSpeed);
-			ApplyGameplayEffectToHitResultActor(HitResult, DamageEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
+			AActor* HitActor = HitResult.GetActor();
+			PushTarget(HitActor, FVector::UpVector * UpLaunchSpeed);
+			ApplyGameplayEffectToHitResultActor(
+				HitResult,
+				DamageEffect,
+				GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)
+			);
 		}
+		UAbilityTask_WaitGameplayEvent* WaitComboDamageEvent =
+				UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+					this,
+					UGA_Combo::GetComboTargetEventTag()
+				);
+
+		WaitComboDamageEvent->EventReceived.AddDynamic(
+			this,
+			&ThisClass::HandleComboDamageEvent
+		);
+
+		WaitComboDamageEvent->ReadyForActivation();
 	}
 }
 
 void UGA_UpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
 {
 	FGameplayTag EventTag = EventData.EventTag;
+
 	if (EventTag == UGA_Combo::GetComboChangedEventEndTag())
 	{
 		NextComboName = NAME_None;
+		return;
 	}
 
 	TArray<FName> TagNames;
 	UGameplayTagsManager::Get().SplitGameplayTagFName(EventTag, TagNames);
+
 	if (TagNames.Num() > 0)
 	{
 		NextComboName = TagNames.Last();
@@ -97,5 +132,43 @@ void UGA_UpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
 
 void UGA_UpperCut::HandleComboCommitEvent(FGameplayEventData EventData)
 {
-	UE_LOG(LogTemp,Warning,TEXT("UGA_UpperCut::HandleComboCommitEvent"));
+	if (NextComboName == NAME_None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpperCut: Cannot commit combo. NextComboName is NAME_None."));
+		return;
+	}
+
+	UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance();
+
+	if (!OwnerAnimInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpperCut: Cannot commit combo. OwnerAnimInstance is null."));
+		return;
+	}
+
+	FName CurrentSection = OwnerAnimInstance->Montage_GetCurrentSection(AbilityMontage);
+	OwnerAnimInstance->Montage_SetNextSection(CurrentSection, NextComboName, AbilityMontage);
+}
+
+void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
+{
+	if (K2_HasAuthority())
+	{
+		TArray<FHitResult> TargetHitResults =
+			GetHitResultFromSweepLocationTargetData(
+				EventData.TargetData,
+				AbilitySweepRadius,
+				ETeamAttitude::Hostile,
+				ShouldDrawDebug()
+			);
+
+		for (FHitResult& HitResult : TargetHitResults)
+		{
+			ApplyGameplayEffectToHitResultActor(
+				HitResult,
+				DamageEffect,
+				GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo)
+			);
+		}
+	}
 }

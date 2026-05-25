@@ -43,5 +43,8 @@ private:
 	UFUNCTION()
 	void HandleComboCommitEvent(FGameplayEventData EventData);
 
+	UFUNCTION()
+	void HandleComboDamageEvent(FGameplayEventData EventData);
+
 	FName NextComboName;
 };
