@@ -31,7 +31,7 @@ private:
 	float UppercutLaunchSpeed = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
-	float HitLaunchSpeed = 100.f;
+	float ComboSelfLaunchSpeed = 200.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	TSubclassOf<UGameplayEffect> LaunchDamageEffect;

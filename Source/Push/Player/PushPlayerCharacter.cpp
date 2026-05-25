@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Push/PushGameplayTags.h"
+#include "Push/GameplayAbilities/GA_Infiltrate.h"
 
 APushPlayerCharacter::APushPlayerCharacter()
 {
@@ -166,18 +167,18 @@ void APushPlayerCharacter::OnStunRemoved()
 
 void APushPlayerCharacter::OnStealth()
 {
-	if (IsLocallyControlledByPlayer())
-		return;
-
-	SetOverheadWidgetVisibility(true);
+	if (!IsLocallyControlledByPlayer())
+	{
+		SetOverheadWidgetVisibility(true);
+	}
 }
 
 void APushPlayerCharacter::OnStealthRemoved()
 {
-	if (IsLocallyControlledByPlayer())
-		return;
-
-	UpdateOverheadWidgetVisibility();
+	if (!IsLocallyControlledByPlayer())
+	{
+		UpdateOverheadWidgetVisibility();
+	}
 }
 
 FVector APushPlayerCharacter::GetLookRightDirection() const

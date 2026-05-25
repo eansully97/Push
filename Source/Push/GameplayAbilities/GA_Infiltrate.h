@@ -15,6 +15,8 @@ class PUSH_API UGA_Infiltrate : public UPushGameplayAbility
 	GENERATED_BODY()
 	
 public:
+	UGA_Infiltrate();
+	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
@@ -36,6 +38,9 @@ private:
 
 	UFUNCTION()
 	void OnStartStealthEvent(FGameplayEventData Payload);
+
+	UFUNCTION()
+	void OnStealthAdded();
 	
 	UFUNCTION()
 	void OnStealthRemoved();

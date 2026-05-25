@@ -173,7 +173,7 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 			);
 
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
-		PushTarget(AvatarActor, FVector::UpVector * HitLaunchSpeed);
+		PushTarget(AvatarActor, FVector::UpVector * ComboSelfLaunchSpeed);
 
 		const FGenericDamageEffectDef* EffectDef = GetDamageEffectDefinitionForCurrentCombo();
 		if (!EffectDef)

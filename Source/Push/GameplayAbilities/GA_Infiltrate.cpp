@@ -7,10 +7,14 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
+#include "Push/PushGameplayTags.h"
 #include "Push/GAS/PushAbilitySystemComponent.h"
 #include "Push/Player/PushPlayerCharacter.h"
 
-class UAbilityTask_WaitGameplayTagRemoved;
+UGA_Infiltrate::UGA_Infiltrate()
+{
+	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
+}
 
 void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                      const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -37,6 +41,17 @@ void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 		WaitStealthEvent->EventReceived.AddDynamic(this, &ThisClass::OnStartStealthEvent);
 		WaitStealthEvent->ReadyForActivation();
+
+		UAbilityTask_WaitGameplayTagAdded* WaitStealthAddedTask =
+			UAbilityTask_WaitGameplayTagAdded::WaitGameplayTagAdd(
+				this,
+				StealthTag,
+				nullptr,
+				true
+			);
+
+		WaitStealthAddedTask->Added.AddDynamic(this, &ThisClass::OnStealthAdded);
+		WaitStealthAddedTask->ReadyForActivation();
 
 		UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Activated. StartStealthEventTag=%s StealthTag=%s"),
 		*StartStealthEventTag.ToString(),
@@ -104,6 +119,24 @@ void UGA_Infiltrate::StartLaunching()
 	PushSelf(LaunchVelocity);
 }
 
+void UGA_Infiltrate::OnStealthAdded()
+{
+	SetShouldBlockOtherAbilities(false);
+
+	UAbilityTask_WaitGameplayTagRemoved* WaitTagRemovedTask =
+		UAbilityTask_WaitGameplayTagRemoved::WaitGameplayTagRemove(
+			this,
+			StealthTag,
+			nullptr
+		);
+
+	WaitTagRemovedTask->Removed.AddDynamic(this, &ThisClass::OnStealthRemoved);
+	WaitTagRemovedTask->ReadyForActivation();
+
+	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: StealthTag added. Basic attack unblocked. Waiting for removal: %s"),
+		*StealthTag.ToString());
+}
+
 void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Start stealth event received. Authority=%s"),
@@ -155,19 +188,6 @@ void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 		K2_EndAbility();
 		return;
 	}
-
-	UAbilityTask_WaitGameplayTagRemoved* WaitTagRemovedTask =
-		UAbilityTask_WaitGameplayTagRemoved::WaitGameplayTagRemove(
-			this,
-			StealthTag,
-			nullptr
-		);
-
-	WaitTagRemovedTask->Removed.AddDynamic(this, &ThisClass::OnStealthRemoved);
-	WaitTagRemovedTask->ReadyForActivation();
-
-	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Waiting for StealthTag removal: %s"),
-		*StealthTag.ToString());
 }
 
 void UGA_Infiltrate::OnStealthRemoved()

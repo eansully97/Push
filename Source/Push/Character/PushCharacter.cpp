@@ -177,6 +177,12 @@ void APushCharacter::SetOverheadWidgetVisibility(bool Hidden)
 
 void APushCharacter::UpdateOverheadWidgetVisibility()
 {
+	if (IsLocallyControlledByPlayer())
+	{
+		SetOverheadWidgetVisibility(true);
+		return;
+	}
+
 	if (IsInStealth())
 		return;
 	
