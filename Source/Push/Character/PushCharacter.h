@@ -59,7 +59,7 @@ private:
 	*/
 public:
 	void ConfigureOverheadWidget();
-	void SetOverheadWidgetVisibility(bool bVisible);
+	void SetOverheadWidgetVisibility(bool Hidden);
 	
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Widgets")
@@ -73,7 +73,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "OverheadWidget")
 	float OverheadWidgetVisibilityRangeSq = 1000000.f;
 
+protected:
 	void UpdateOverheadWidgetVisibility();
+
+private:
 	void SetStatusGaugeEnabled(bool bEnabled);
 	
 	/*
@@ -143,4 +146,3 @@ private:
 	UPROPERTY()
 	UAIPerceptionStimuliSourceComponent* PerceptionStimuliSourceComponent;
 };
-

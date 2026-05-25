@@ -27,7 +27,10 @@ private:
 	float AbilitySweepRadius = 80.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
-	float UpLaunchSpeed = 1000.f;
+	float UppercutLaunchSpeed = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float HitLaunchSpeed = 100.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	TSubclassOf<UGameplayEffect> DamageEffect;

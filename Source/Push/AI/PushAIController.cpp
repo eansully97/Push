@@ -45,6 +45,7 @@ void APushAIController::OnPossess(APawn* InPawn)
 	UAbilitySystemComponent* PawnASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetPawn());
 	if (PawnASC)
 	{
+		PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::PawnDeadTagUpdated);
 		PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).AddUObject(this, &ThisClass::PawnStunTagUpdated);
 	}
 }
@@ -60,6 +61,18 @@ void APushAIController::BeginPlay()
 
 void APushAIController::TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus)
 {
+	if (!TargetActor)
+		return;
+
+	if (ForgetActorIfInvalid(TargetActor))
+	{
+		if (GetCurrentTarget() == TargetActor)
+		{
+			SetCurrentTarget(GetNextPerceivedActor());
+		}
+		return;
+	}
+
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		if (!GetCurrentTarget())
@@ -69,7 +82,7 @@ void APushAIController::TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus
 	}
 	else
 	{
-		ForgetActorIfDead(TargetActor);
+		ForgetActorIfInvalid(TargetActor);
 	}
 }
 
@@ -84,24 +97,40 @@ void APushAIController::TargetForgotten(AActor* TargetActor)
 	}
 }
 
-const UObject* APushAIController::GetCurrentTarget() const
+AActor* APushAIController::GetCurrentTarget() const
 {
 	if (const UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
 	{
-		return GetBlackboardComponent()->GetValueAsObject(TargetBlackboardKeyName);
+		return Cast<AActor>(BlackboardComponent->GetValueAsObject(TargetBlackboardKeyName));
 	}
 	return nullptr;
 }
 
 void APushAIController::SetCurrentTarget(AActor* NewTarget)
 {
+	if (NewTarget && ForgetActorIfInvalid(NewTarget))
+	{
+		NewTarget = nullptr;
+	}
+
+	if (GetCurrentTarget() == NewTarget && TargetTagEventActor.Get() == NewTarget)
+	{
+		return;
+	}
+
 	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 	if (!BlackboardComponent)
+	{
+		UnbindTargetInvalidTagEvents();
 		return;
+	}
+
+	UnbindTargetInvalidTagEvents();
 	
 	if (NewTarget)
 	{
 		BlackboardComponent->SetValueAsObject(TargetBlackboardKeyName, NewTarget);
+		BindTargetInvalidTagEvents(NewTarget);
 	}
 	else
 	{
@@ -109,55 +138,128 @@ void APushAIController::SetCurrentTarget(AActor* NewTarget)
 	}
 }
 
-void APushAIController::ForgetActorIfDead(AActor* ActorToForget)
+bool APushAIController::IsInvalidTargetActor(AActor* ActorToCheck) const
 {
-	const UAbilitySystemComponent* ActorASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(ActorToForget);
+	if (!ActorToCheck)
+		return true;
+
+	const UAbilitySystemComponent* ActorASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(ActorToCheck);
 	if (!ActorASC)
+		return false;
+
+	return ActorASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead)
+		|| ActorASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stealth);
+}
+
+void APushAIController::ForceForgetActor(AActor* ActorToForget)
+{
+	if (!ActorToForget || !AIPerceptionComponent)
 		return;
 
-	if (ActorASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun))
+	for (UAIPerceptionComponent::TActorPerceptionContainer::TIterator Iter = AIPerceptionComponent->GetPerceptualDataIterator(); Iter; ++Iter)
 	{
-		for (UAIPerceptionComponent::TActorPerceptionContainer::TIterator Iter = AIPerceptionComponent->GetPerceptualDataIterator(); Iter; ++Iter)
+		if (Iter->Key != ActorToForget)
 		{
-			if (Iter->Key != ActorToForget)
-			{
-				continue;
-			}
-			for (FAIStimulus& Stimulus : Iter->Value.LastSensedStimuli)
-			{
-				Stimulus.SetStimulusAge(TNumericLimits<float>::Max());
-			}
+			continue;
+		}
+
+		for (FAIStimulus& Stimulus : Iter->Value.LastSensedStimuli)
+		{
+			Stimulus.SetStimulusAge(TNumericLimits<float>::Max());
 		}
 	}
 }
 
-AActor* APushAIController::GetNextPerceivedActor() const
+bool APushAIController::ForgetActorIfInvalid(AActor* ActorToForget)
 {
-	if (PerceptionComponent)
-	{
-		TArray<AActor*> PerceivedActors;
-		AIPerceptionComponent->GetPerceivedHostileActors(PerceivedActors);
+	if (!IsInvalidTargetActor(ActorToForget))
+		return false;
 
-		if (PerceivedActors.Num() != 0)
+	ForceForgetActor(ActorToForget);
+	return true;
+}
+
+AActor* APushAIController::GetNextPerceivedActor()
+{
+	if (!AIPerceptionComponent)
+		return nullptr;
+
+	TArray<AActor*> PerceivedActors;
+	AIPerceptionComponent->GetPerceivedHostileActors(PerceivedActors);
+
+	for (AActor* PerceivedActor : PerceivedActors)
+	{
+		if (ForgetActorIfInvalid(PerceivedActor))
 		{
-			return PerceivedActors[0];
+			continue;
 		}
+
+		return PerceivedActor;
 	}
 	return nullptr;
+}
+
+void APushAIController::BindTargetInvalidTagEvents(AActor* TargetActor)
+{
+	if (!TargetActor)
+		return;
+
+	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	if (!TargetASC)
+		return;
+
+	TargetTagEventActor = TargetActor;
+	TargetDeadTagDelegateHandle = TargetASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::TargetInvalidTagUpdated);
+	TargetStealthTagDelegateHandle = TargetASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).AddUObject(this, &ThisClass::TargetInvalidTagUpdated);
+}
+
+void APushAIController::UnbindTargetInvalidTagEvents()
+{
+	AActor* TargetActor = TargetTagEventActor.Get();
+	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	if (TargetASC)
+	{
+		if (TargetDeadTagDelegateHandle.IsValid())
+		{
+			TargetASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).Remove(TargetDeadTagDelegateHandle);
+		}
+		if (TargetStealthTagDelegateHandle.IsValid())
+		{
+			TargetASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).Remove(TargetStealthTagDelegateHandle);
+		}
+	}
+
+	ResetTargetInvalidTagHandles();
+}
+
+void APushAIController::ResetTargetInvalidTagHandles()
+{
+	TargetTagEventActor.Reset();
+	TargetDeadTagDelegateHandle.Reset();
+	TargetStealthTagDelegateHandle.Reset();
+}
+
+void APushAIController::TargetInvalidTagUpdated(const FGameplayTag Tag, int32 Count)
+{
+	if (Count == 0)
+		return;
+
+	AActor* TargetActor = TargetTagEventActor.Get();
+	if (!TargetActor || GetCurrentTarget() != TargetActor)
+		return;
+
+	ForceForgetActor(TargetActor);
+	SetCurrentTarget(GetNextPerceivedActor());
 }
 
 void APushAIController::ClearAndDisableAllSenses()
 {
 	AIPerceptionComponent->AgeStimuli(TNumericLimits<float>::Max());
+	SetCurrentTarget(nullptr);
 
 	for (auto SenseConfigIt = AIPerceptionComponent->GetSensesConfigIterator(); SenseConfigIt; ++SenseConfigIt)
 	{
 		AIPerceptionComponent->SetSenseEnabled((*SenseConfigIt)->GetSenseImplementation(), false);
-	}
-
-	if (GetBlackboardComponent())
-	{
-		GetBlackboardComponent()->ClearValue(TargetBlackboardKeyName);
 	}
 }
 

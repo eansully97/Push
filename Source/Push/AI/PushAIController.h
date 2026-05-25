@@ -33,7 +33,12 @@ private:
 	UBehaviorTree* BehaviorTree;
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "AI Behavior")
-	bool bIsPawnDead;
+	bool bIsPawnDead = false;
+
+	TWeakObjectPtr<AActor> TargetTagEventActor;
+	FDelegateHandle TargetDeadTagDelegateHandle;
+	FDelegateHandle TargetStunTagDelegateHandle;
+	FDelegateHandle TargetStealthTagDelegateHandle;
 
 	UFUNCTION()
 	void TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus);
@@ -41,11 +46,18 @@ private:
 	UFUNCTION()
 	void TargetForgotten(AActor* TargetActor);
 
-	const UObject* GetCurrentTarget() const;
+	AActor* GetCurrentTarget() const;
 	void SetCurrentTarget(AActor* NewTarget);
-	void ForgetActorIfDead(AActor* ActorToForget);
+	bool IsInvalidTargetActor(AActor* ActorToCheck) const;
+	void ForceForgetActor(AActor* ActorToForget);
+	bool ForgetActorIfInvalid(AActor* ActorToForget);
 
-	AActor* GetNextPerceivedActor() const;
+	AActor* GetNextPerceivedActor();
+
+	void BindTargetInvalidTagEvents(AActor* TargetActor);
+	void UnbindTargetInvalidTagEvents();
+	void ResetTargetInvalidTagHandles();
+	void TargetInvalidTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	void ClearAndDisableAllSenses();
 	void EnableAllSenses();

@@ -84,12 +84,12 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 
-		PushTarget(AvatarActor, FVector::UpVector * UpLaunchSpeed);
+		PushTarget(AvatarActor, FVector::UpVector * UppercutLaunchSpeed);
 
 		for (FHitResult& HitResult : TargetHitResults)
 		{
 			AActor* HitActor = HitResult.GetActor();
-			PushTarget(HitActor, FVector::UpVector * UpLaunchSpeed);
+			PushTarget(HitActor, FVector::UpVector * UppercutLaunchSpeed);
 			ApplyGameplayEffectToHitResultActor(
 				HitResult,
 				DamageEffect,
@@ -162,8 +162,13 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 				ShouldDrawDebug()
 			);
 
+		AActor* AvatarActor = GetAvatarActorFromActorInfo();
+		PushTarget(AvatarActor, FVector::UpVector * HitLaunchSpeed);
+
 		for (FHitResult& HitResult : TargetHitResults)
 		{
+			AActor* HitActor = HitResult.GetActor();
+			PushTarget(HitActor, FVector::UpVector * HitLaunchSpeed);
 			ApplyGameplayEffectToHitResultActor(
 				HitResult,
 				DamageEffect,

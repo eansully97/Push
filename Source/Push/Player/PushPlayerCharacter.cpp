@@ -166,12 +166,18 @@ void APushPlayerCharacter::StunRemoved()
 
 void APushPlayerCharacter::OnStealth()
 {
-	SetOverheadWidgetVisibility(false);
+	if (IsLocallyControlledByPlayer())
+		return;
+
+	SetOverheadWidgetVisibility(true);
 }
 
 void APushPlayerCharacter::StealthRemoved()
 {
-	SetOverheadWidgetVisibility(true);
+	if (IsLocallyControlledByPlayer())
+		return;
+
+	UpdateOverheadWidgetVisibility();
 }
 
 FVector APushPlayerCharacter::GetLookRightDirection() const

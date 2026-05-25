@@ -116,10 +116,15 @@ void APushCharacter::StealthTagUpdated(const FGameplayTag Tag, int32 Count)
 	if (Count != 0)
 	{
 		OnStealth();
+		SetAIPerceptionStimuliSourceEnabled(false);
 	}
 	else
 	{
 		StealthRemoved();
+		if (!IsDead())
+		{
+			SetAIPerceptionStimuliSourceEnabled(true);
+		}
 	}
 }
 
@@ -162,9 +167,12 @@ void APushCharacter::ConfigureOverheadWidget()
 	}
 }
 
-void APushCharacter::SetOverheadWidgetVisibility(bool bVisible)
+void APushCharacter::SetOverheadWidgetVisibility(bool Hidden)
 {
-	OverheadWidgetComponent->SetHiddenInGame(bVisible);
+	if (!OverheadWidgetComponent)
+		return;
+
+	OverheadWidgetComponent->SetHiddenInGame(Hidden);
 }
 
 void APushCharacter::UpdateOverheadWidgetVisibility()
@@ -243,7 +251,10 @@ void APushCharacter::Respawn()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
-	SetAIPerceptionStimuliSourceEnabled(true);
+	if (!IsInStealth())
+	{
+		SetAIPerceptionStimuliSourceEnabled(true);
+	}
 	SetStatusGaugeEnabled(true);
 	
 	if (GetMesh()->GetAnimInstance())
