@@ -9,6 +9,7 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "GameFramework/Character.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Push/PushGameplayAbilityTypes.h"
 #include "PushCharacter.generated.h"
 
 class UAIPerceptionStimuliSourceComponent;
@@ -39,8 +40,11 @@ protected:
 public:
 	 virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
+	
 	 
 private:
 	void BindChangeDelegates();

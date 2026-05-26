@@ -19,6 +19,7 @@ public:
 	void GiveInitialAbilities();
 	void ApplyFullStatEffect();
 	void AuthBreakStealth();
+	const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
 

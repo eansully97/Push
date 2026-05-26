@@ -55,6 +55,11 @@ void UPushAbilitySystemComponent::AuthBreakStealth()
 	RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Stealth));
 }
 
+const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& UPushAbilitySystemComponent::GetAbilities() const
+{
+	return Abilities;
+}
+
 void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
 {
 	Super::NotifyAbilityActivated(Handle, Ability);

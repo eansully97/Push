@@ -416,8 +416,13 @@ UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const
 	return PushAbilitySystemComponent;
 }
 
+const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& APushCharacter::GetAbilities() const
+{
+	return PushAbilitySystemComponent->GetAbilities();
+}
+
 bool APushCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
-	const FGameplayEventData& EventData)
+                                                             const FGameplayEventData& EventData)
 {
 	return true;
 }

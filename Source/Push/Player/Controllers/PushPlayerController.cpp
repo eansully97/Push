@@ -59,5 +59,6 @@ void APushPlayerController::SpawnGameplayWidget()
 	if (GameplayWidget)
 	{
 		GameplayWidget->AddToViewport();
+		GameplayWidget->ConfigureAbilities(PushPlayerCharacter->GetAbilities());
 	}
 }
