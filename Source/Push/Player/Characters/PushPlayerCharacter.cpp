@@ -39,7 +39,7 @@ void APushPlayerCharacter::CacheMaterials()
 	CachedMaterials = GetMesh()->GetMaterials();
 }
 
-void APushPlayerCharacter::SetCachedMaterials()
+void APushPlayerCharacter::RestoreCachedMaterials()
 {
 	int32 Index = 0;
 	for (const auto& CachedMaterial : CachedMaterials)

@@ -23,7 +23,7 @@ public:
 	void CacheMaterials();
 	
 	UFUNCTION(BlueprintCallable)
-	void SetCachedMaterials();
+	void RestoreCachedMaterials();
 
 	FVector GetMovementInputDirection() const;
 	FVector GetLookRightDirection() const;
