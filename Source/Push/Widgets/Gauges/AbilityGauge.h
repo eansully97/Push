@@ -37,8 +37,11 @@ class PUSH_API UAbilityGauge : public UUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
 public:
+	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	void ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWidgetData);
+	void AbilityCommitted(UGameplayAbility* Ability);
+	void StartCooldown(float CooldownTimeRemaining, float CooldownDuration);
 
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -55,4 +58,13 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CostText;
+
+	UPROPERTY()
+	UGameplayAbility* AbilityObject;
+
+	UPROPERTY()
+	float CachedCooldownDuration;
+
+	UPROPERTY()
+	float CachedCooldownTimeRemaining;
 };
