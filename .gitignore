@@ -4,25 +4,14 @@
 # Ignore everything in Content
 Content/**
 
-# Re-include wanted root folders
-!Content/AI/
-!Content/Characters/
-!Content/Framework/
-!Content/GameplayAbilities/
-!Content/GameplayCueNotifies/
-!Content/Input/
-!Content/Player/
-!Content/Widgets/
+# Ignore everything INSIDE Content
+Content/*
 
-# Re-include their contents
-!Content/AI/**
-!Content/Characters/**
-!Content/Framework/**
-!Content/GameplayAbilities/**
-!Content/GameplayCueNotifies/**
-!Content/Input/**
-!Content/Player/**
-!Content/Widgets/**
+# Re-include this folder
+!Content/Push/
+
+# Re-include everything inside it
+!Content/Push/**
 
 # Compiled Object files
 *.slo
