@@ -4,8 +4,8 @@
 #include "OverheadWidget.h"
 
 #include "GenericTeamAgentInterface.h"
-#include "ValueGauge.h"
-#include "Push/GAS/PushAttributeSet.h"
+#include "Push/Widgets/Gauges/ValueGauge.h"
+#include "Push/GAS/Attributes/PushAttributeSet.h"
 
 void UOverheadWidget::ConfigureWithASC(UAbilitySystemComponent* AbilitySystemComponent) const
 {

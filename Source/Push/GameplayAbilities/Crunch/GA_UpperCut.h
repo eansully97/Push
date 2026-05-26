@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PushGameplayAbility.h"
+#include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "Push/PushGameplayAbilityTypes.h"
 #include "GA_UpperCut.generated.h"
 

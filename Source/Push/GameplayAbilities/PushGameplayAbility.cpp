@@ -7,8 +7,8 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GAS/PushAbilitySystemComponent.h"
-#include "StatusAbilities/GA_Status_Launched.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
+#include "Push/GameplayAbilities/StatusAbilities/GA_Status_Launched.h"
 
 
 UPushGameplayAbility::UPushGameplayAbility()

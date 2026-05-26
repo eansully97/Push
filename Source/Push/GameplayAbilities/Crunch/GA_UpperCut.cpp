@@ -3,11 +3,11 @@
 
 #include "GA_UpperCut.h"
 
-#include "GA_Combo.h"
+#include "Push/GameplayAbilities/GA_Combo.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/Player/PushPlayerCharacter.h"
+#include "Push/Player/Characters/PushPlayerCharacter.h"
 
 UGA_UpperCut::UGA_UpperCut()
 {

@@ -12,7 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GameplayAbilities/GA_Infiltrate.h"
+#include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
 
 APushPlayerCharacter::APushPlayerCharacter()
 {

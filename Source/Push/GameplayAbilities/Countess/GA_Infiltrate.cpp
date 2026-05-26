@@ -8,8 +8,8 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayTag.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GAS/PushAbilitySystemComponent.h"
-#include "Push/Player/PushPlayerCharacter.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
+#include "Push/Player/Characters/PushPlayerCharacter.h"
 
 UGA_Infiltrate::UGA_Infiltrate()
 {

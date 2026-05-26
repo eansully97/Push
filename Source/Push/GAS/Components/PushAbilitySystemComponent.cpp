@@ -4,8 +4,8 @@
 #include "PushAbilitySystemComponent.h"
 
 #include "Push/PushGameplayTags.h"
-#include "Push/GameplayAbilities/GA_Infiltrate.h"
-#include "PushAttributeSet.h"
+#include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
+#include "Push/GAS/Attributes/PushAttributeSet.h"
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {

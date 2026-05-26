@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "Push/PushGameplayAbilityTypes.h"
-#include "Push/Character/PushCharacter.h"
+#include "Push/Character/Base/PushCharacter.h"
 #include "PushPlayerCharacter.generated.h"
 
 class UInputAction;

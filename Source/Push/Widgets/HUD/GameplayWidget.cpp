@@ -4,8 +4,8 @@
 #include "GameplayWidget.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
-#include "ValueGauge.h"
-#include "Push/GAS/PushAttributeSet.h"
+#include "Push/Widgets/Gauges/ValueGauge.h"
+#include "Push/GAS/Attributes/PushAttributeSet.h"
 
 void UGameplayWidget::NativeConstruct()
 {

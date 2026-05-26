@@ -5,7 +5,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
-#include "PushAbilitySystemComponent.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
 
 void UPushAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Push/Character/PushCharacter.h"
+#include "Push/Character/Base/PushCharacter.h"
 #include "Minion.generated.h"
 
 UCLASS()

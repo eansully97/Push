@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PushGameplayAbility.h"
+#include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "GA_Infiltrate.generated.h"
 
 /**

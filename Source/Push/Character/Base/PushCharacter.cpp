@@ -12,9 +12,9 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GAS/PushAbilitySystemComponent.h"
-#include "Push/GAS/PushAttributeSet.h"
-#include "Push/Widgets/OverheadWidget.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
+#include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/Widgets/Overhead/OverheadWidget.h"
 
 APushCharacter::APushCharacter()
 {

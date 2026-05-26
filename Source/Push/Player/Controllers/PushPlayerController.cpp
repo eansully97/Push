@@ -3,9 +3,9 @@
 
 #include "PushPlayerController.h"
 
-#include "PushPlayerCharacter.h"
+#include "Push/Player/Characters/PushPlayerCharacter.h"
 #include "Net/UnrealNetwork.h"
-#include "Push/Widgets/GameplayWidget.h"
+#include "Push/Widgets/HUD/GameplayWidget.h"
 
 
 void APushPlayerController::OnPossess(APawn* InPawn)
