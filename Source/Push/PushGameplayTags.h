@@ -1,44 +1,41 @@
-﻿// PushGameplayTags.h
+﻿#pragma once
 
-#pragma once
-
-#include "CoreMinimal.h"
 #include "NativeGameplayTags.h"
-
-/**
- * Centralized native gameplay tags for the Push project.
- */
 
 namespace PushGameplayTags
 {
 	// Ability
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_SecondaryAttack);
 
-	// Ability.Combo
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Damage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo02);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo03);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo04);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_End);
 
-	// Ability.Combo.Change
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo02);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo03);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_Combo04);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Combo_Change_End);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Crunch_Uppercut);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Crunch_GroundBlast);
 
-	// Ability.Cooldown
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Crunch_Uppercut);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Infiltrate);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Siphon);
 
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Countess_Infiltrate);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Countess_Siphon);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Damage_Combo);
 
-	// Ability.Events
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Event_Status_Launched);
+	// Cooldown
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Crunch_Uppercut);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Infiltrate);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Siphon);
 
-	//Input
+	// Input
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_BasicAttack_Pressed);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_SecondaryAttack_Pressed);
 
-	// Event.Status
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Status_Stealth);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Status_Launched);
+	// Gameplay Events
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Crunch_Uppercut_Launch);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Stealth);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Launched);
 
 	// Status
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Dead);
@@ -47,18 +44,15 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Stealth);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Aiming);
 
-	// GameplayCue
+	// Gameplay Cues
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_CameraShake);
 
-	// GameplayCue.Ability
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Ability_Infiltrate);
 
-	// GameplayCue.Hit
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Crunch_Punch);
-
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Basic);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Finish);
-	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Siphon);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Minion);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Reaction);
 }

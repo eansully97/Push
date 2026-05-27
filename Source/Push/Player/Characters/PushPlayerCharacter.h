@@ -76,6 +76,12 @@ private:
 	void SetInputEnabledFromPlayerController(bool bEnabled);
 
 	/*
+	*	GAS
+	*/
+private:
+	virtual void OnAimStateChanged(bool bIsAiming) override;
+
+	/*
 	*	Death and Respawn
 	*/
 private:
@@ -95,4 +101,20 @@ private:
 private:
 	virtual void OnStealth() override;
 	virtual void OnStealthRemoved() override;
+
+	/*
+	*	Camera View
+	*/
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "View")
+	FVector CameraAimLocalOffset{FVector()};
+
+	UPROPERTY(EditDefaultsOnly, Category = "View")
+	float CameraLerpSpeed = 20.f;
+
+	FTimerHandle CameraLerpTimerHandle;
+
+	void LerpCameraToLocalOffset(const FVector& Goal);
+	void TickCameraLocalOffset(FVector Goal);
+	
 };

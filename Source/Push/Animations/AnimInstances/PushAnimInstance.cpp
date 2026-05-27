@@ -3,9 +3,12 @@
 
 #include "PushAnimInstance.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Push/PushGameplayTags.h"
 
 void UPushAnimInstance::NativeInitializeAnimation()
 {
@@ -17,6 +20,12 @@ void UPushAnimInstance::NativeInitializeAnimation()
 	{
 		MovementComponent = OwnerCharacter->GetCharacterMovement();
 	}
+
+	UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TryGetPawnOwner());
+	if (OwnerASC)
+	{
+		OwnerASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).AddUObject(this, &ThisClass::OwnerAimingTagUpdated);
+	}
 }
 
 void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
@@ -25,7 +34,8 @@ void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	if (OwnerCharacter)
 	{
-		CharacterSpeed = OwnerCharacter->GetVelocity().Length();
+		FVector Velocity = OwnerCharacter->GetVelocity();
+		CharacterSpeed = Velocity.Length();
 		
 		FRotator BodyRotation = OwnerCharacter->GetActorRotation();
 		FRotator BodyRotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(BodyRotation, PreviousBodyRotation);
@@ -36,6 +46,9 @@ void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 		FRotator ControlRotation = OwnerCharacter->GetBaseAimRotation();
 		LookRotationOffset = UKismetMathLibrary::NormalizedDeltaRotator(ControlRotation, BodyRotation);
+
+		ForwardSpeed = Velocity.Dot(ControlRotation.Vector());
+		RightSpeed = -Velocity.Dot(ControlRotation.Vector().Cross(FVector::UpVector));
 	}
 
 	if (MovementComponent)
@@ -47,4 +60,9 @@ void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
 void UPushAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeThreadSafeUpdateAnimation(DeltaSeconds);
+}
+
+void UPushAnimInstance::OwnerAimingTagUpdated(const FGameplayTag Tag, int32 Count)
+{
+	bIsAiming = Count != 0;
 }

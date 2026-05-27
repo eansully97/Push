@@ -143,6 +143,12 @@ void APushCharacter::SetIsAiming(bool bIsAiming)
 	
 	bUseControllerRotationYaw = bIsAiming;
 	GetCharacterMovement()->bOrientRotationToMovement = !bIsAiming;
+	OnAimStateChanged(bIsAiming);
+}
+
+void APushCharacter::OnAimStateChanged(bool bIsAiming)
+{
+	// Override in child class
 }
 
 bool APushCharacter::IsLocallyControlledByPlayer() const

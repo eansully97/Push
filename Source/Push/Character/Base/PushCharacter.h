@@ -6,7 +6,6 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
 #include "GenericTeamAgentInterface.h"
-#include "Abilities/GameplayAbilityTypes.h"
 #include "GameFramework/Character.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Push/PushGameplayAbilityTypes.h"
@@ -53,6 +52,7 @@ private:
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
 	void AimingTagUpdated(const FGameplayTag Tag, int32 Count);
 	void SetIsAiming(bool bIsAiming);
+	virtual void OnAimStateChanged(bool bIsAiming);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;

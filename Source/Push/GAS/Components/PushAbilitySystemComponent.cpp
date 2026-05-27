@@ -10,6 +10,8 @@
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {
 	GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::HealthUpdated);
+	GenericConfirmInputID = static_cast<int32>(EAbilityInputID::Confirm);
+	GenericCancelInputID = static_cast<int32>(EAbilityInputID::Cancel);
 }
 
 void UPushAbilitySystemComponent::ApplyInitialEffects()
@@ -101,8 +103,8 @@ bool UPushAbilitySystemComponent::ShouldAbilityActivationBreakStealth(
 		return false;
 
 	const int32 BasicAttackInputID = static_cast<int32>(EAbilityInputID::BasicAttack);
-	const int32 Ability6InputID = static_cast<int32>(EAbilityInputID::Ability6);
+	const int32 Ability4InputID = static_cast<int32>(EAbilityInputID::Ability4);
 
 	return AbilitySpec->InputID >= BasicAttackInputID
-		&& AbilitySpec->InputID <= Ability6InputID;
+		&& AbilitySpec->InputID <= Ability4InputID;
 }

@@ -50,5 +50,5 @@ void UGA_Status_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 FGameplayTag UGA_Status_Launched::GetLaunchAbilityActivationTag()
 {
-	return PushGameplayTags::Event_Status_Launched;
+	return PushGameplayTags::GameplayEvent_Status_Launched;
 }

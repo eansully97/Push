@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "PushAnimInstance.generated.h"
 
+struct FGameplayTag;
 class UCharacterMovementComponent;
 
 /**
@@ -22,6 +23,8 @@ public:
 	
 
 private:
+	void OwnerAimingTagUpdated(const FGameplayTag Tag, int32 Count);
+	
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
 
@@ -30,6 +33,8 @@ private:
 
 	UPROPERTY()
 	float CharacterSpeed;
+	float ForwardSpeed;
+	float RightSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	float YawSpeedSmoothLerpSpeed = 1.f;
@@ -45,11 +50,26 @@ private:
 	UPROPERTY()
 	bool bIsJumping;
 
+	UPROPERTY()
+	bool bIsAiming;
+
 public:
 	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
 	FORCEINLINE float GetCharacterSpeed() const
 	{
 		return CharacterSpeed;
+	}
+
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	FORCEINLINE float GetCharacterForwardSpeed() const
+	{
+		return ForwardSpeed;
+	}
+
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	FORCEINLINE float GetCharacterRightSpeed() const
+	{
+		return RightSpeed;
 	}
 
 	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
@@ -86,6 +106,18 @@ public:
 	FORCEINLINE bool GetIsOnGround() const
 	{
 		return !bIsJumping;
+	}
+
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	FORCEINLINE bool GetIsAiming() const
+	{
+		return bIsAiming;
+	}
+
+	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))
+	FORCEINLINE bool ShouldDoFullBody() const
+	{
+		return GetCharacterSpeed() <= 0 && !GetIsAiming();
 	}
 
 	UFUNCTION(BlueprintCallable, meta=(BlueprintThreadSafe))

@@ -67,7 +67,7 @@ void UGA_UpperCut::ActivateAbility(
 
 FGameplayTag UGA_UpperCut::GetUpperCutLaunchTag()
 {
-	return PushGameplayTags::Ability_Event_Status_Launched;
+	return PushGameplayTags::GameplayEvent_Ability_Crunch_Uppercut_Launch;
 }
 
 const FGenericDamageEffectDef* UGA_UpperCut::GetDamageEffectDefinitionForCurrentCombo() const

@@ -6,6 +6,7 @@
 #include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "GA_GroundBlast.generated.h"
 
+class ATargetActor_GroundPick;
 /**
  * 
  */
@@ -19,6 +20,15 @@ public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 private:
+	UFUNCTION()
+	void TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
+
+	UFUNCTION()
+	void TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	UAnimMontage* AbilityMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	TSubclassOf<ATargetActor_GroundPick> TargetActorClass;
 };

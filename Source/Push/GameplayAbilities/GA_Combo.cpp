@@ -52,17 +52,17 @@ void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 FGameplayTag UGA_Combo::GetComboChangedEventTag()
 {
-	return PushGameplayTags::Ability_Combo_Change;
+	return PushGameplayTags::Ability_BasicAttack_Combo_Change;
 }
 
 FGameplayTag UGA_Combo::GetComboChangedEventEndTag()
 {
-	return PushGameplayTags::Ability_Combo_Change_End;
+	return PushGameplayTags::Ability_BasicAttack_Combo_Change_End;
 }
 
 FGameplayTag UGA_Combo::GetComboTargetEventTag()
 {
-	return PushGameplayTags::Ability_Combo_Damage;
+	return PushGameplayTags::Ability_Damage_Combo;
 }
 
 void UGA_Combo::SetupWaitComboInputPressed()
