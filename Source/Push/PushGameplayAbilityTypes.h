@@ -29,5 +29,5 @@ public:
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	UPROPERTY(EditAnywhere)
-	FVector PushVelocity;
+	FVector PushVelocity = FVector();
 };
