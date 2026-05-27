@@ -50,6 +50,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	FName IconMaterialParamName = "Icon";
 
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	FName CooldownPercentParamName = "Percent";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Cooldown")
+	float CooldownUpdateInterval = 0.1;
+
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CooldownCounterText;
 
@@ -67,4 +73,13 @@ private:
 
 	UPROPERTY()
 	float CachedCooldownTimeRemaining;
+
+	FNumberFormattingOptions WholeNumberFormattingOptions;
+	FNumberFormattingOptions DoubleDigitFormattingOptions;
+
+	FTimerHandle CooldownTimerHandle;
+	FTimerHandle CooldownUpdateTimerHandle;
+
+	void CooldownFinished();
+	void UpdateCooldown();
 };
