@@ -36,6 +36,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Status_Stun, "Status.Stun");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Launched, "Status.Launched");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Stealth, "Status.Stealth");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Aiming, "Status.Aiming");
 
 	// GameplayCue
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_CameraShake, "GameplayCue.CameraShake");

@@ -19,7 +19,9 @@
 APushCharacter::APushCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	PushAbilitySystemComponent = CreateDefaultSubobject<UPushAbilitySystemComponent>("PushAbilitySystemComponent");
@@ -79,6 +81,7 @@ void APushCharacter::BindChangeDelegates()
 		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::DeathTagUpdated);
 		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).AddUObject(this, &ThisClass::StunTagUpdated);
 		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).AddUObject(this, &ThisClass::StealthTagUpdated);
+		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).AddUObject(this, &ThisClass::AimingTagUpdated);
 	}
 }
 
@@ -126,6 +129,20 @@ void APushCharacter::StealthTagUpdated(const FGameplayTag Tag, int32 Count)
 			SetAIPerceptionStimuliSourceEnabled(true);
 		}
 	}
+}
+
+void APushCharacter::AimingTagUpdated(const FGameplayTag Tag, int32 Count)
+{
+	SetIsAiming(Count != 0);
+}
+
+void APushCharacter::SetIsAiming(bool bIsAiming)
+{
+	if (!GetCharacterMovement())
+		return;
+	
+	bUseControllerRotationYaw = bIsAiming;
+	GetCharacterMovement()->bOrientRotationToMovement = !bIsAiming;
 }
 
 bool APushCharacter::IsLocallyControlledByPlayer() const

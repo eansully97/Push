@@ -51,6 +51,8 @@ private:
 	void DeathTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StunTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
+	void AimingTagUpdated(const FGameplayTag Tag, int32 Count);
+	void SetIsAiming(bool bIsAiming);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;

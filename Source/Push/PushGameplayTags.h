@@ -44,6 +44,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Stun);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Launched);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Stealth);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Aiming);
 
 	// GameplayCue
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_CameraShake);

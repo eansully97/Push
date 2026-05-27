@@ -14,6 +14,8 @@ class PUSH_API UGA_GroundBlast : public UPushGameplayAbility
 {
 	GENERATED_BODY()
 public:
+	UGA_GroundBlast();
+	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 private:
