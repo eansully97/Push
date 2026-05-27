@@ -89,6 +89,8 @@ void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		for (const auto& AbilityActionPair : AbilityInputActions)
 		{
 			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Triggered, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
+			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Completed, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
+			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Canceled, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
 		}
 	}
 }
@@ -111,7 +113,9 @@ void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
 
 void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID)
 {
-	if (ActionValue.Get<bool>())
+	const bool bIsPressed = ActionValue.Get<bool>();
+
+	if (bIsPressed)
 	{
 		GetAbilitySystemComponent()->AbilityLocalInputPressed(static_cast<int32>(AbilityInputID));
 	}
@@ -120,7 +124,7 @@ void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionVal
 		GetAbilitySystemComponent()->AbilityLocalInputReleased(static_cast<int32>(AbilityInputID));
 	}
 
-	if (AbilityInputID == EAbilityInputID::BasicAttack)
+	if (bIsPressed && AbilityInputID == EAbilityInputID::BasicAttack)
 	{
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());
 		Server_SendGameplayEventToSelf(PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());

@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Blueprint/UserWidget.h"
 #include "AbilityGauge.generated.h"
 
+class UAbilitySystemComponent;
 class UGameplayAbility;
 class UImage;
 class UTextBlock;
@@ -38,9 +40,9 @@ class PUSH_API UAbilityGauge : public UUserWidget, public IUserObjectListEntry
 	GENERATED_BODY()
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	void ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWidgetData);
-	void AbilityCommitted(UGameplayAbility* Ability);
 	void StartCooldown(float CooldownTimeRemaining, float CooldownDuration);
 
 private:
@@ -69,17 +71,27 @@ private:
 	UGameplayAbility* AbilityObject;
 
 	UPROPERTY()
+	UAbilitySystemComponent* OwnerAbilitySystemComponent;
+
+	UPROPERTY()
 	float CachedCooldownDuration;
 
 	UPROPERTY()
 	float CachedCooldownTimeRemaining;
 
 	FNumberFormattingOptions WholeNumberFormattingOptions;
-	FNumberFormattingOptions DoubleDigitFormattingOptions;
+	FNumberFormattingOptions TwoDecimalFormattingOptions;
 
 	FTimerHandle CooldownTimerHandle;
 	FTimerHandle CooldownUpdateTimerHandle;
+	TMap<FGameplayTag, FDelegateHandle> CooldownTagDelegateHandles;
 
+	void ClearCooldownTimers();
+	void BindCooldownTagEvents();
+	void ClearCooldownTagEvents();
+	void CooldownTagChanged(const FGameplayTag Tag, int32 Count);
+	void RefreshCooldownState();
+	bool GetCooldownTimeRemainingAndDuration(float& CooldownTimeRemaining, float& CooldownDuration) const;
 	void CooldownFinished();
 	void UpdateCooldown();
 };

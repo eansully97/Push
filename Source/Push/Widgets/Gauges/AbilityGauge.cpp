@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
 #include "Components/Image.h"
+#include "GameplayEffect.h"
 #include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Components/TextBlock.h"
 
@@ -14,26 +15,34 @@ void UAbilityGauge::NativeConstruct()
 {
 	Super::NativeConstruct();
 	CooldownCounterText->SetVisibility(ESlateVisibility::Hidden);
-	UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwningPlayerPawn());
-	if (OwnerASC)
-	{
-		OwnerASC->AbilityCommittedCallbacks.AddUObject(this, &ThisClass::AbilityCommitted);
-	}
+	OwnerAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwningPlayerPawn());
 
-	WholeNumberFormattingOptions.MaximumFractionalDigits = 0;
-	DoubleDigitFormattingOptions.MaximumFractionalDigits = 2;
+	WholeNumberFormattingOptions.SetMinimumFractionalDigits(0);
+	WholeNumberFormattingOptions.SetMaximumFractionalDigits(0);
+	TwoDecimalFormattingOptions.SetMinimumFractionalDigits(1);
+	TwoDecimalFormattingOptions.SetMaximumFractionalDigits(1);
+}
+
+void UAbilityGauge::NativeDestruct()
+{
+	ClearCooldownTagEvents();
+	ClearCooldownTimers();
+	Super::NativeDestruct();
 }
 
 void UAbilityGauge::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
+	ClearCooldownTagEvents();
 	AbilityObject = Cast<UGameplayAbility>(ListItemObject);
 
 	float CooldownDuration = UPushAbilitySystemStatics::GetStaticCooldownDurationForAbility(AbilityObject);
 	int32 Cost = UPushAbilitySystemStatics::GetStaticCostForAbility(AbilityObject);
 
 	CostText->SetText(FText::AsNumber(Cost));
-	CooldownDurationText->SetText(FText::AsNumber(CooldownDuration));
+	CooldownDurationText->SetText(FText::AsNumber(CooldownDuration, &WholeNumberFormattingOptions));
+	BindCooldownTagEvents();
+	RefreshCooldownState();
 }
 
 void UAbilityGauge::ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWidgetData)
@@ -44,23 +53,18 @@ void UAbilityGauge::ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWid
 	}
 }
 
-void UAbilityGauge::AbilityCommitted(UGameplayAbility* Ability)
-{
-	if (Ability->GetClass()->GetDefaultObject() == AbilityObject)
-	{
-		float CooldownTimeRemaining = 0.f;
-		float CooldownDuration = 0.f;
-
-		Ability->GetCooldownTimeRemainingAndDuration(Ability->GetCurrentAbilitySpecHandle(), Ability->GetCurrentActorInfo(), CooldownTimeRemaining, CooldownDuration);
-
-		StartCooldown(CooldownTimeRemaining, CooldownDuration);
-	}
-}
-
 void UAbilityGauge::StartCooldown(float CooldownTimeRemaining, float CooldownDuration)
 {
+	if (CooldownTimeRemaining <= 0.f || CooldownDuration <= 0.f)
+	{
+		CooldownFinished();
+		return;
+	}
+
+	ClearCooldownTimers();
+
 	CooldownCounterText->SetVisibility(ESlateVisibility::Visible);
-	CooldownDurationText->SetText(FText::AsNumber(CooldownDuration));
+	CooldownDurationText->SetText(FText::AsNumber(CooldownDuration, &WholeNumberFormattingOptions));
 	CachedCooldownDuration = CooldownDuration;
 	CachedCooldownTimeRemaining = CooldownTimeRemaining;
 
@@ -68,18 +72,138 @@ void UAbilityGauge::StartCooldown(float CooldownTimeRemaining, float CooldownDur
 	GetWorld()->GetTimerManager().SetTimer(CooldownUpdateTimerHandle,this, &ThisClass::UpdateCooldown, CooldownUpdateInterval, true, 0.f);
 }
 
+void UAbilityGauge::BindCooldownTagEvents()
+{
+	if (!OwnerAbilitySystemComponent)
+	{
+		OwnerAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwningPlayerPawn());
+	}
+
+	if (!OwnerAbilitySystemComponent || !AbilityObject)
+	{
+		return;
+	}
+
+	const FGameplayTagContainer* CooldownTags = AbilityObject->GetCooldownTags();
+	if (!CooldownTags)
+	{
+		return;
+	}
+
+	for (const FGameplayTag& CooldownTag : *CooldownTags)
+	{
+		FDelegateHandle DelegateHandle = OwnerAbilitySystemComponent
+			->RegisterGameplayTagEvent(CooldownTag, EGameplayTagEventType::AnyCountChange)
+			.AddUObject(this, &ThisClass::CooldownTagChanged);
+
+		CooldownTagDelegateHandles.Add(CooldownTag, DelegateHandle);
+	}
+}
+
+void UAbilityGauge::ClearCooldownTimers()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(CooldownTimerHandle);
+		World->GetTimerManager().ClearTimer(CooldownUpdateTimerHandle);
+	}
+}
+
+void UAbilityGauge::ClearCooldownTagEvents()
+{
+	if (OwnerAbilitySystemComponent)
+	{
+		for (const TPair<FGameplayTag, FDelegateHandle>& DelegateHandlePair : CooldownTagDelegateHandles)
+		{
+			OwnerAbilitySystemComponent->RegisterGameplayTagEvent(
+				DelegateHandlePair.Key,
+				EGameplayTagEventType::AnyCountChange
+			).Remove(DelegateHandlePair.Value);
+		}
+	}
+
+	CooldownTagDelegateHandles.Empty();
+}
+
+void UAbilityGauge::CooldownTagChanged(const FGameplayTag Tag, int32 Count)
+{
+	RefreshCooldownState();
+}
+
+void UAbilityGauge::RefreshCooldownState()
+{
+	float CooldownTimeRemaining = 0.f;
+	float CooldownDuration = 0.f;
+	if (GetCooldownTimeRemainingAndDuration(CooldownTimeRemaining, CooldownDuration))
+	{
+		StartCooldown(CooldownTimeRemaining, CooldownDuration);
+	}
+	else
+	{
+		CooldownFinished();
+	}
+}
+
+bool UAbilityGauge::GetCooldownTimeRemainingAndDuration(float& CooldownTimeRemaining, float& CooldownDuration) const
+{
+	CooldownTimeRemaining = 0.f;
+	CooldownDuration = 0.f;
+
+	if (!OwnerAbilitySystemComponent || !AbilityObject)
+	{
+		return false;
+	}
+
+	const FGameplayTagContainer* CooldownTags = AbilityObject->GetCooldownTags();
+	if (!CooldownTags || CooldownTags->Num() == 0)
+	{
+		return false;
+	}
+
+	const FGameplayEffectQuery CooldownQuery = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(*CooldownTags);
+	TArray<TPair<float, float>> CooldownDurations =
+		OwnerAbilitySystemComponent->GetActiveEffectsTimeRemainingAndDuration(CooldownQuery);
+
+	if (CooldownDurations.IsEmpty())
+	{
+		return false;
+	}
+
+	int32 BestCooldownIndex = 0;
+	float LongestTimeRemaining = CooldownDurations[0].Key;
+	for (int32 Index = 1; Index < CooldownDurations.Num(); ++Index)
+	{
+		if (CooldownDurations[Index].Key > LongestTimeRemaining)
+		{
+			LongestTimeRemaining = CooldownDurations[Index].Key;
+			BestCooldownIndex = Index;
+		}
+	}
+
+	CooldownTimeRemaining = CooldownDurations[BestCooldownIndex].Key;
+	CooldownDuration = CooldownDurations[BestCooldownIndex].Value;
+	return CooldownTimeRemaining > 0.f && CooldownDuration > 0.f;
+}
+
 void UAbilityGauge::CooldownFinished()
 {
 	CachedCooldownDuration = CachedCooldownTimeRemaining = 0.f;
 	CooldownCounterText->SetVisibility(ESlateVisibility::Hidden);
-	GetWorld()->GetTimerManager().ClearTimer(CooldownUpdateTimerHandle);
+	ClearCooldownTimers();
 	Icon->GetDynamicMaterial()->SetScalarParameterValue(CooldownPercentParamName, 1.f);
 }
 
 void UAbilityGauge::UpdateCooldown()
 {
 	CachedCooldownTimeRemaining -= CooldownUpdateInterval;
-	FNumberFormattingOptions* FormattingOptions = CachedCooldownTimeRemaining > 1 ? &WholeNumberFormattingOptions : &DoubleDigitFormattingOptions;
+	if (CachedCooldownTimeRemaining <= 0.f || CachedCooldownDuration <= 0.f)
+	{
+		CooldownFinished();
+		return;
+	}
+
+	const FNumberFormattingOptions* FormattingOptions =
+		CachedCooldownTimeRemaining > 1.f ? &WholeNumberFormattingOptions : &TwoDecimalFormattingOptions;
 	CooldownCounterText->SetText(FText::AsNumber(CachedCooldownTimeRemaining, FormattingOptions));
 
 	Icon->GetDynamicMaterial()->SetScalarParameterValue(CooldownPercentParamName, 1.f - CachedCooldownTimeRemaining / CachedCooldownDuration);

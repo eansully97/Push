@@ -28,6 +28,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Crunch_Uppercut);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Countess_Infiltrate);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Cooldown_Countess_Siphon);
 
 	// Ability.Events
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Event_Status_Launched);
