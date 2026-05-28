@@ -219,6 +219,13 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 
 	for (const auto& AbilityPair : InputActivatedAbilities)
 	{
+		if (AbilityPair.Key == EAbilityInputID::None)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has an input-activated ability assigned to input id None. Move non-input startup abilities to DefaultAbilities, or assign a real input id."),
+				*GetPathName());
+			bIsValid = false;
+		}
+
 		if (!AbilityPair.Value.AbilityClass)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s has a null input ability for input id %d."),

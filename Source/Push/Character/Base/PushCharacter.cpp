@@ -53,6 +53,11 @@ void APushCharacter::ClientSideInit()
 void APushCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!HasAuthority() && !UsesPlayerStateAbilitySystem())
+	{
+		ClientSideInit();
+	}
 	
 	ConfigureOverheadWidget();
 	
@@ -74,7 +79,15 @@ void APushCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	ClientSideInit();
+	if (UsesPlayerStateAbilitySystem())
+	{
+		ClientSideInit();
+	}
+}
+
+bool APushCharacter::UsesPlayerStateAbilitySystem() const
+{
+	return false;
 }
 
 void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

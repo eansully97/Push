@@ -33,6 +33,7 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual bool UsesPlayerStateAbilitySystem() const;
 	
 	/*
 	 *	GAS

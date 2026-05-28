@@ -78,6 +78,11 @@ void APushPlayerCharacter::PawnClientRestart()
 	}
 }
 
+bool APushPlayerCharacter::UsesPlayerStateAbilitySystem() const
+{
+	return true;
+}
+
 void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
