@@ -27,6 +27,9 @@ private:
 	UFUNCTION()
 	void TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
 
+	bool TryGetValidatedTargetLocation(const FGameplayAbilityTargetDataHandle& TargetDataHandle, FVector& OutTargetLocation) const;
+	FGameplayAbilityTargetDataHandle BuildServerTargetData(const FVector& TargetLocation) const;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	FGenericDamageEffectDef DamageEffectDef;
 

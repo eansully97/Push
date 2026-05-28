@@ -31,6 +31,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	/*
@@ -39,14 +40,19 @@ protected:
 public:
 	 virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
+	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
 	
 	 
 private:
+	void InitializeAbilitySystem();
+	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
+	UPushAttributeSet* ResolveAttributeSet() const;
 	void BindChangeDelegates();
+	void ClearChangeDelegates();
+	bool IsAllowedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
 	void DeathTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StunTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
@@ -59,6 +65,20 @@ private:
 
 	UPROPERTY()
 	UPushAttributeSet* PushAttributeSet;
+
+	UPROPERTY()
+	UPushAbilitySystemComponent* ActiveAbilitySystemComponent;
+
+	UPROPERTY()
+	UPushAttributeSet* ActiveAttributeSet;
+
+	UPROPERTY()
+	UPushAbilitySystemComponent* BoundAbilitySystemComponent;
+
+	FDelegateHandle DeadTagDelegateHandle;
+	FDelegateHandle StunTagDelegateHandle;
+	FDelegateHandle StealthTagDelegateHandle;
+	FDelegateHandle AimingTagDelegateHandle;
 
 	/*
 	*	OverheadWidget

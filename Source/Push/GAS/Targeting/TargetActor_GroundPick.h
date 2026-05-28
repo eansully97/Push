@@ -31,6 +31,9 @@ protected:
 	float TargetTraceRange = 2000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float MaxDownwardTraceDistance = 10000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	float TargetAreaRadius = 300.f;
 
 public:

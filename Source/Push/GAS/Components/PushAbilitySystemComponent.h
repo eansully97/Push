@@ -19,7 +19,15 @@ public:
 	void GiveInitialAbilities();
 	void ApplyFullStatEffect();
 	void AuthBreakStealth();
-	const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& GetAbilities() const;
+	void RemoveTransientEffectsForDeath();
+	void InitializeDefaultsFrom(const UPushAbilitySystemComponent* DefaultsSource);
+	const TMap<EAbilityInputID, FPushInputActivatedAbility>& GetInputActivatedAbilities() const;
+	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
+	TSubclassOf<UGameplayEffect> GetGameplayEffect(EPushGameplayEffectID GameplayEffectID) const;
+	TSubclassOf<UGameplayEffect> GetDeathEffect() const;
+	TSubclassOf<UGameplayEffect> GetFullStatEffect() const;
+	TArray<TSubclassOf<UGameplayEffect>> GetInitialEffects() const;
+	bool ValidateConfiguredData() const;
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
 
@@ -27,19 +35,20 @@ private:
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level = 1);
 	bool ShouldAbilityActivationBreakStealth(const FGameplayAbilitySpecHandle Handle, const UGameplayAbility* Ability) const;
+	bool ShouldPersistActiveEffectThroughDeath(const FActiveGameplayEffect& ActiveEffect) const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
-	TSubclassOf<UGameplayEffect> DeathEffect;
+	TArray<FPushGameplayEffect> GameplayEffects;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
-	TSubclassOf<UGameplayEffect> FullStatEffect;
-	
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
 	TArray<TSubclassOf<UGameplayEffect>> InitialEffects;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities")
-	TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>> Abilities;
+	TMap<EAbilityInputID, FPushInputActivatedAbility> InputActivatedAbilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities")
-	TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>> BasicAbilities;
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	bool bInitialEffectsApplied = false;
+	bool bInitialAbilitiesGranted = false;
 };

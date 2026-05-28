@@ -16,6 +16,8 @@ class APushGameMode : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
+	APushGameMode();
+
 	virtual APlayerController* SpawnPlayerController(ENetRole InRemoteRole, const FString& Options) override;
 
 private:

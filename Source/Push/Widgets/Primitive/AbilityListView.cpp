@@ -5,12 +5,19 @@
 
 #include "Abilities/GameplayAbility.h"
 
-void UAbilityListView::ConfigureAbilities(const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& Abilities)
+void UAbilityListView::ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities)
 {
+	ClearListItems();
+	OnEntryWidgetGenerated().RemoveAll(this);
 	OnEntryWidgetGenerated().AddUObject(this, &ThisClass::AbilityGaugeGenerated);
-	for (const auto& AbilityPair : Abilities)
+	for (const FPushInputActivatedAbilityDisplayData& AbilityData : Abilities)
 	{
-		AddItem(AbilityPair.Value.GetDefaultObject());
+		if (AbilityData.AbilityClass)
+		{
+			UAbilityListItem* AbilityListItem = NewObject<UAbilityListItem>(this);
+			AbilityListItem->Initialize(AbilityData);
+			AddItem(AbilityListItem);
+		}
 	}
 }
 
@@ -18,7 +25,10 @@ void UAbilityListView::AbilityGaugeGenerated(UUserWidget& Widget)
 {
 	if (UAbilityGauge* AbilityGauge = Cast<UAbilityGauge>(&Widget))
 	{
-		AbilityGauge->ConfigureWithWidgetData(FindWidgetDataForAbility(AbilityGauge->GetListItem<UGameplayAbility>()->GetClass()));
+		if (const UAbilityListItem* AbilityListItem = AbilityGauge->GetListItem<UAbilityListItem>())
+		{
+			AbilityGauge->ConfigureWithWidgetData(FindWidgetDataForAbility(AbilityListItem->GetAbilityClass()));
+		}
 	}
 }
 

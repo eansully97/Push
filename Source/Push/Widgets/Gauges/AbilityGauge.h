@@ -6,12 +6,34 @@
 #include "GameplayTagContainer.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Blueprint/UserWidget.h"
+#include "Push/PushGameplayAbilityTypes.h"
 #include "AbilityGauge.generated.h"
 
 class UAbilitySystemComponent;
 class UGameplayAbility;
 class UImage;
 class UTextBlock;
+class UTexture2D;
+
+UCLASS()
+class PUSH_API UAbilityListItem : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	void Initialize(const FPushInputActivatedAbilityDisplayData& InAbilityData);
+
+	EAbilityInputID GetInputID() const;
+	TSubclassOf<UGameplayAbility> GetAbilityClass() const;
+	UGameplayAbility* GetAbilityDefaultObject() const;
+
+private:
+	UPROPERTY()
+	EAbilityInputID InputID = EAbilityInputID::None;
+
+	UPROPERTY()
+	TSubclassOf<UGameplayAbility> AbilityClass;
+};
 
 USTRUCT(BlueprintType)
 struct FAbilityWidgetData : public FTableRowBase
@@ -87,6 +109,7 @@ private:
 	TMap<FGameplayTag, FDelegateHandle> CooldownTagDelegateHandles;
 
 	void ClearCooldownTimers();
+	void SetIconTexture(UTexture2D* IconTexture) const;
 	void BindCooldownTagEvents();
 	void ClearCooldownTagEvents();
 	void CooldownTagChanged(const FGameplayTag Tag, int32 Count);

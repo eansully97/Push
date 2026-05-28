@@ -13,8 +13,10 @@
 
 UGA_Combo::UGA_Combo()
 {
-	AbilityTags.AddTag(PushGameplayTags::Ability_BasicAttack);
-	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(PushGameplayTags::Ability_BasicAttack);
+	SetAssetTags(AssetTags);
+	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
 }
 
 void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,

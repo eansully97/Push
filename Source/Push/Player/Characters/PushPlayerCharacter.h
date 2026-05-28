@@ -68,6 +68,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TMap<EAbilityInputID, UInputAction*> AbilityInputActions;
+
+	bool bSuppressBasicAttackUntilRelease = false;
+	bool bSuppressSecondaryAttackUntilRelease = false;
 	
 	void HandleLookInput(const FInputActionValue& ActionValue);
 	void HandleMoveInput(const FInputActionValue& ActionValue);

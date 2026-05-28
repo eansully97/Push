@@ -76,7 +76,11 @@ FVector ATargetActor_GroundPick::GetTargetPoint() const
 
 	if (!TraceResult.bBlockingHit)
 	{
-		GetWorld()->LineTraceSingleByChannel(TraceResult, TraceEnd, TraceEnd + FVector::DownVector * TNumericLimits<float>::Max(), ECC_Target);
+		GetWorld()->LineTraceSingleByChannel(
+			TraceResult,
+			TraceEnd,
+			TraceEnd + FVector::DownVector * MaxDownwardTraceDistance,
+			ECC_Target);
 	}
 
 	if (!TraceResult.bBlockingHit)

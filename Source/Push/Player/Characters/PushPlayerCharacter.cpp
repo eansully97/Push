@@ -117,20 +117,73 @@ void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
 void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID)
 {
 	const bool bIsPressed = ActionValue.Get<bool>();
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	const bool bIsBasicAttackInput = AbilityInputID == EAbilityInputID::BasicAttack;
+	const bool bIsSecondaryAttackInput = AbilityInputID == EAbilityInputID::SecondaryAttack;
+	const bool bIsConfirmInput = AbilityInputID == EAbilityInputID::Confirm;
+	const bool bIsCancelInput = AbilityInputID == EAbilityInputID::Cancel;
+	const bool bGenericConfirmBound = ASC->IsGenericConfirmInputBound(static_cast<int32>(EAbilityInputID::Confirm));
+	const bool bGenericCancelBound = ASC->IsGenericCancelInputBound(static_cast<int32>(EAbilityInputID::Cancel));
 
 	if (bIsPressed)
 	{
-		GetAbilitySystemComponent()->AbilityLocalInputPressed(static_cast<int32>(AbilityInputID));
+		if (bIsBasicAttackInput && (bGenericConfirmBound || bSuppressBasicAttackUntilRelease))
+		{
+			bSuppressBasicAttackUntilRelease = true;
+			return;
+		}
+
+		if (bIsSecondaryAttackInput && (bGenericCancelBound || bSuppressSecondaryAttackUntilRelease))
+		{
+			bSuppressSecondaryAttackUntilRelease = true;
+			return;
+		}
+
+		// Confirm/cancel share physical buttons with regular abilities in IMC_Gameplay.
+		if (bIsConfirmInput && bGenericConfirmBound)
+		{
+			bSuppressBasicAttackUntilRelease = true;
+		}
+
+		if (bIsCancelInput && bGenericCancelBound)
+		{
+			bSuppressSecondaryAttackUntilRelease = true;
+		}
+
+		ASC->AbilityLocalInputPressed(static_cast<int32>(AbilityInputID));
 	}
 	else
 	{
-		GetAbilitySystemComponent()->AbilityLocalInputReleased(static_cast<int32>(AbilityInputID));
+		if (bIsBasicAttackInput && bSuppressBasicAttackUntilRelease)
+		{
+			bSuppressBasicAttackUntilRelease = false;
+			return;
+		}
+
+		if (bIsSecondaryAttackInput && bSuppressSecondaryAttackUntilRelease)
+		{
+			bSuppressSecondaryAttackUntilRelease = false;
+			return;
+		}
+
+		ASC->AbilityLocalInputReleased(static_cast<int32>(AbilityInputID));
 	}
 
-	if (bIsPressed && AbilityInputID == EAbilityInputID::BasicAttack)
+	if (bIsPressed && bIsBasicAttackInput)
 	{
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());
 		Server_SendGameplayEventToSelf(PushGameplayTags::Input_Ability_BasicAttack_Pressed, FGameplayEventData());
+	}
+
+	if (bIsPressed && bIsSecondaryAttackInput)
+	{
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, PushGameplayTags::Input_Ability_SecondaryAttack_Pressed, FGameplayEventData());
+		Server_SendGameplayEventToSelf(PushGameplayTags::Input_Ability_SecondaryAttack_Pressed, FGameplayEventData());
 	}
 }
 

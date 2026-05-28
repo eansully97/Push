@@ -19,7 +19,9 @@
 
 UGA_Siphon::UGA_Siphon()
 {
-	AbilityTags.AddTag(PushGameplayTags::Ability_Countess_Siphon);
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(PushGameplayTags::Ability_Countess_Siphon);
+	SetAssetTags(AssetTags);
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 

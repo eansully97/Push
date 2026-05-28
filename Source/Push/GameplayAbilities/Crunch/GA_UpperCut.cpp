@@ -11,7 +11,9 @@
 
 UGA_UpperCut::UGA_UpperCut()
 {
-	AbilityTags.AddTag(PushGameplayTags::Ability_Crunch_Uppercut);
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(PushGameplayTags::Ability_Crunch_Uppercut);
+	SetAssetTags(AssetTags);
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 

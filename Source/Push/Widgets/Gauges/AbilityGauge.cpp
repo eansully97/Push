@@ -10,6 +10,28 @@
 #include "GameplayEffect.h"
 #include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Components/TextBlock.h"
+#include "Engine/Texture2D.h"
+
+void UAbilityListItem::Initialize(const FPushInputActivatedAbilityDisplayData& InAbilityData)
+{
+	InputID = InAbilityData.InputID;
+	AbilityClass = InAbilityData.AbilityClass;
+}
+
+EAbilityInputID UAbilityListItem::GetInputID() const
+{
+	return InputID;
+}
+
+TSubclassOf<UGameplayAbility> UAbilityListItem::GetAbilityClass() const
+{
+	return AbilityClass;
+}
+
+UGameplayAbility* UAbilityListItem::GetAbilityDefaultObject() const
+{
+	return AbilityClass ? AbilityClass.GetDefaultObject() : nullptr;
+}
 
 void UAbilityGauge::NativeConstruct()
 {
@@ -34,7 +56,8 @@ void UAbilityGauge::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 	ClearCooldownTagEvents();
-	AbilityObject = Cast<UGameplayAbility>(ListItemObject);
+	const UAbilityListItem* AbilityListItem = Cast<UAbilityListItem>(ListItemObject);
+	AbilityObject = AbilityListItem ? AbilityListItem->GetAbilityDefaultObject() : Cast<UGameplayAbility>(ListItemObject);
 
 	float CooldownDuration = UPushAbilitySystemStatics::GetStaticCooldownDurationForAbility(AbilityObject);
 	int32 Cost = UPushAbilitySystemStatics::GetStaticCostForAbility(AbilityObject);
@@ -47,10 +70,24 @@ void UAbilityGauge::NativeOnListItemObjectSet(UObject* ListItemObject)
 
 void UAbilityGauge::ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWidgetData)
 {
-	if (Icon && AbilityWidgetData)
+	if (!Icon || !AbilityWidgetData || AbilityWidgetData->Icon.IsNull())
 	{
-		Icon->GetDynamicMaterial()->SetTextureParameterValue(IconMaterialParamName, AbilityWidgetData->Icon.LoadSynchronous());
+		return;
 	}
+
+	if (UTexture2D* LoadedIcon = AbilityWidgetData->Icon.Get())
+	{
+		SetIconTexture(LoadedIcon);
+		return;
+	}
+
+	AbilityWidgetData->Icon.LoadAsync(
+		FLoadSoftObjectPathAsyncDelegate::CreateWeakLambda(
+			this,
+			[this](const FSoftObjectPath& Path, UObject* LoadedObject)
+			{
+				SetIconTexture(Cast<UTexture2D>(LoadedObject));
+			}));
 }
 
 void UAbilityGauge::StartCooldown(float CooldownTimeRemaining, float CooldownDuration)
@@ -106,6 +143,14 @@ void UAbilityGauge::ClearCooldownTimers()
 	{
 		World->GetTimerManager().ClearTimer(CooldownTimerHandle);
 		World->GetTimerManager().ClearTimer(CooldownUpdateTimerHandle);
+	}
+}
+
+void UAbilityGauge::SetIconTexture(UTexture2D* IconTexture) const
+{
+	if (Icon && IconTexture)
+	{
+		Icon->GetDynamicMaterial()->SetTextureParameterValue(IconMaterialParamName, IconTexture);
 	}
 }
 

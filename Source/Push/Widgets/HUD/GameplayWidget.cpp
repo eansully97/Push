@@ -22,7 +22,7 @@ void UGameplayWidget::NativeConstruct()
 	}
 }
 
-void UGameplayWidget::ConfigureAbilities(const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& Abilities)
+void UGameplayWidget::ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities)
 {
 	AbilityList->ConfigureAbilities(Abilities);
 }

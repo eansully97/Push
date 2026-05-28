@@ -18,32 +18,71 @@ void UPushAbilitySystemComponent::ApplyInitialEffects()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
+
+	if (bInitialEffectsApplied)
+		return;
+
+	ValidateConfiguredData();
 	
-	for (const auto& EffectClass : InitialEffects)
+	for (const auto& EffectClass : GetInitialEffects())
 	{
 		AuthApplyGameplayEffect(EffectClass);
 	}
+
+	bInitialEffectsApplied = true;
 }
 
 void UPushAbilitySystemComponent::GiveInitialAbilities()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
+
+	if (bInitialAbilitiesGranted)
+		return;
+
+	ValidateConfiguredData();
 	
-	for (const auto& AbilityPair : Abilities)
+	for (const auto& AbilityPair : InputActivatedAbilities)
 	{
-		GiveAbility(FGameplayAbilitySpec(AbilityPair.Value, 0, static_cast<int32>(AbilityPair.Key), nullptr));
+		const FPushInputActivatedAbility& Ability = AbilityPair.Value;
+		if (Ability.AbilityClass)
+		{
+			GiveAbility(FGameplayAbilitySpec(Ability.AbilityClass, Ability.Level, static_cast<int32>(AbilityPair.Key), nullptr));
+		}
 	}
 
-	for (const auto& AbilityPair : BasicAbilities)
+	for (const auto& AbilityClass : DefaultAbilities)
 	{
-		GiveAbility(FGameplayAbilitySpec(AbilityPair.Value, 1, static_cast<int32>(AbilityPair.Key), nullptr));
+		if (AbilityClass)
+		{
+			GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, nullptr));
+		}
 	}
+
+	bInitialAbilitiesGranted = true;
 }
 
 void UPushAbilitySystemComponent::ApplyFullStatEffect()
 {
-	AuthApplyGameplayEffect(FullStatEffect);
+	AuthApplyGameplayEffect(GetFullStatEffect());
+}
+
+void UPushAbilitySystemComponent::RemoveTransientEffectsForDeath()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
+	const TArray<FActiveGameplayEffectHandle> ActiveEffectHandles = GetActiveEffects(FGameplayEffectQuery());
+	for (const FActiveGameplayEffectHandle& ActiveEffectHandle : ActiveEffectHandles)
+	{
+		const FActiveGameplayEffect* ActiveEffect = GetActiveGameplayEffect(ActiveEffectHandle);
+		if (!ActiveEffect || ShouldPersistActiveEffectThroughDeath(*ActiveEffect))
+		{
+			continue;
+		}
+
+		RemoveActiveGameplayEffect(ActiveEffectHandle);
+	}
 }
 
 void UPushAbilitySystemComponent::AuthBreakStealth()
@@ -57,9 +96,147 @@ void UPushAbilitySystemComponent::AuthBreakStealth()
 	RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Stealth));
 }
 
-const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& UPushAbilitySystemComponent::GetAbilities() const
+void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySystemComponent* DefaultsSource)
 {
-	return Abilities;
+	if (!DefaultsSource || DefaultsSource == this)
+		return;
+
+	GameplayEffects = DefaultsSource->GameplayEffects;
+	InitialEffects = DefaultsSource->InitialEffects;
+	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
+	DefaultAbilities = DefaultsSource->DefaultAbilities;
+}
+
+const TMap<EAbilityInputID, FPushInputActivatedAbility>& UPushAbilitySystemComponent::GetInputActivatedAbilities() const
+{
+	return InputActivatedAbilities;
+}
+
+TArray<FPushInputActivatedAbilityDisplayData> UPushAbilitySystemComponent::GetDisplayInputActivatedAbilities() const
+{
+	TArray<FPushInputActivatedAbilityDisplayData> DisplayAbilities;
+	for (const auto& AbilityPair : InputActivatedAbilities)
+	{
+		if (AbilityPair.Key == EAbilityInputID::None
+			|| AbilityPair.Key == EAbilityInputID::BasicAttack
+			|| AbilityPair.Key == EAbilityInputID::Confirm
+			|| AbilityPair.Key == EAbilityInputID::Cancel
+			|| !AbilityPair.Value.AbilityClass)
+		{
+			continue;
+		}
+
+		FPushInputActivatedAbilityDisplayData DisplayData;
+		DisplayData.InputID = AbilityPair.Key;
+		DisplayData.AbilityClass = AbilityPair.Value.AbilityClass;
+		DisplayData.Level = AbilityPair.Value.Level;
+		DisplayAbilities.Add(DisplayData);
+	}
+
+	DisplayAbilities.Sort(
+		[](const FPushInputActivatedAbilityDisplayData& Left, const FPushInputActivatedAbilityDisplayData& Right)
+		{
+			return static_cast<uint8>(Left.InputID) < static_cast<uint8>(Right.InputID);
+		});
+
+	return DisplayAbilities;
+}
+
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetGameplayEffect(
+	EPushGameplayEffectID GameplayEffectID) const
+{
+	const FPushGameplayEffect* GameplayEffect = GameplayEffects.FindByPredicate(
+		[GameplayEffectID](const FPushGameplayEffect& Effect)
+		{
+			return Effect.EffectID == GameplayEffectID;
+		});
+
+	if (GameplayEffect)
+	{
+		return GameplayEffect->EffectClass;
+	}
+
+	return nullptr;
+}
+
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetDeathEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::Death);
+}
+
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetFullStatEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::FullStat);
+}
+
+TArray<TSubclassOf<UGameplayEffect>> UPushAbilitySystemComponent::GetInitialEffects() const
+{
+	TArray<TSubclassOf<UGameplayEffect>> Effects = InitialEffects;
+	const TSubclassOf<UGameplayEffect> FullStatEffect = GetFullStatEffect();
+	if (FullStatEffect && !Effects.Contains(FullStatEffect))
+	{
+		Effects.Add(FullStatEffect);
+	}
+
+	return Effects;
+}
+
+bool UPushAbilitySystemComponent::ValidateConfiguredData() const
+{
+	bool bIsValid = true;
+	TSet<EPushGameplayEffectID> EffectIDs;
+
+	for (const FPushGameplayEffect& GameplayEffect : GameplayEffects)
+	{
+		if (EffectIDs.Contains(GameplayEffect.EffectID))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has duplicate GameplayEffect entry for id %d."),
+				*GetPathName(), static_cast<int32>(GameplayEffect.EffectID));
+			bIsValid = false;
+		}
+
+		EffectIDs.Add(GameplayEffect.EffectID);
+
+		if (!GameplayEffect.EffectClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null GameplayEffect entry for id %d."),
+				*GetPathName(), static_cast<int32>(GameplayEffect.EffectID));
+			bIsValid = false;
+		}
+	}
+
+	if (!GetDeathEffect())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s is missing the Death gameplay effect."), *GetPathName());
+		bIsValid = false;
+	}
+
+	if (!GetFullStatEffect())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *GetPathName());
+		bIsValid = false;
+	}
+
+	for (const auto& AbilityPair : InputActivatedAbilities)
+	{
+		if (!AbilityPair.Value.AbilityClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null input ability for input id %d."),
+				*GetPathName(), static_cast<int32>(AbilityPair.Key));
+			bIsValid = false;
+		}
+	}
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : DefaultAbilities)
+	{
+		if (!AbilityClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null default ability."), *GetPathName());
+			bIsValid = false;
+		}
+	}
+
+	return bIsValid;
 }
 
 void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
@@ -76,15 +253,16 @@ void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& Ch
 {
 	if (!GetOwner()) return;
 
-	if (ChangeData.NewValue <= 0 && GetOwner()->HasAuthority() && DeathEffect)
+	if (ChangeData.NewValue <= 0 && GetOwner()->HasAuthority() && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
 	{
-		AuthApplyGameplayEffect(DeathEffect);
+		RemoveTransientEffectsForDeath();
+		AuthApplyGameplayEffect(GetDeathEffect());
 	}
 }
 
 void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level)
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
+	if (!GameplayEffect || !GetOwner() || !GetOwner()->HasAuthority())
 		return;
 	
 	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingSpec(GameplayEffect, Level, MakeEffectContext());
@@ -107,4 +285,20 @@ bool UPushAbilitySystemComponent::ShouldAbilityActivationBreakStealth(
 
 	return AbilitySpec->InputID >= BasicAttackInputID
 		&& AbilitySpec->InputID <= Ability4InputID;
+}
+
+bool UPushAbilitySystemComponent::ShouldPersistActiveEffectThroughDeath(const FActiveGameplayEffect& ActiveEffect) const
+{
+	FGameplayTagContainer GrantedTags;
+	ActiveEffect.Spec.GetAllGrantedTags(GrantedTags);
+
+	if (GrantedTags.HasTag(PushGameplayTags::Cooldown) || GrantedTags.HasTagExact(PushGameplayTags::Status_Dead))
+	{
+		return true;
+	}
+
+	const TSubclassOf<UGameplayEffect> DeathEffectClass = GetDeathEffect();
+	return DeathEffectClass
+		&& ActiveEffect.Spec.Def
+		&& ActiveEffect.Spec.Def->GetClass()->IsChildOf(DeathEffectClass);
 }

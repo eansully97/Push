@@ -13,7 +13,9 @@
 
 UGA_Infiltrate::UGA_Infiltrate()
 {
-	AbilityTags.AddTag(PushGameplayTags::Ability_Countess_Infiltrate);
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(PushGameplayTags::Ability_Countess_Infiltrate);
+	SetAssetTags(AssetTags);
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 

@@ -24,6 +24,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Damage_Combo);
 
 	// Cooldown
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Crunch_Uppercut);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Crunch_GroundBlast);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Infiltrate);

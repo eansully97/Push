@@ -19,7 +19,7 @@ class PUSH_API UGameplayWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	virtual void NativeConstruct() override;
-	void ConfigureAbilities(const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& Abilities);
+	void ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities);
 
 private:
 	UPROPERTY(meta = (BindWidget))

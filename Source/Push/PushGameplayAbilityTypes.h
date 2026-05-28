@@ -1,6 +1,7 @@
 ﻿
 #pragma once
 #include "CoreMinimal.h"
+#include "Abilities/GameplayAbility.h"
 #include "GameplayEffect.h"
 #include "PushGameplayAbilityTypes.generated.h"
 
@@ -18,6 +19,56 @@ enum class EAbilityInputID : uint8
 	Cancel			UMETA(DisplayName = "Cancel"),
 };
 
+UENUM(BlueprintType)
+enum class EPushGameplayEffectID : uint8
+{
+	None		UMETA(DisplayName = "None"),
+	Death		UMETA(DisplayName = "Death"),
+	FullStat	UMETA(DisplayName = "FullStat"),
+};
+
+USTRUCT(BlueprintType)
+struct FPushGameplayEffect
+{
+	GENERATED_BODY()
+	
+public:
+	UPROPERTY(EditAnywhere)
+	EPushGameplayEffectID EffectID{EPushGameplayEffectID::None};
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> EffectClass{};
+};
+
+USTRUCT(BlueprintType)
+struct FPushInputActivatedAbility
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayAbility> AbilityClass{};
+
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+	int32 Level = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FPushInputActivatedAbilityDisplayData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere)
+	EAbilityInputID InputID = EAbilityInputID::None;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayAbility> AbilityClass{};
+
+	UPROPERTY(EditAnywhere)
+	int32 Level = 0;
+};
+
 USTRUCT(BlueprintType)
 struct FGenericDamageEffectDef
 {
@@ -25,7 +76,7 @@ struct FGenericDamageEffectDef
 	
 public:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	TSubclassOf<UGameplayEffect> DamageEffectClass{};
 
 	UPROPERTY(EditAnywhere)
 	FVector PushVelocity = FVector();

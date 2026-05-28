@@ -15,8 +15,8 @@ void APushPlayerController::OnPossess(APawn* InPawn)
 	PushPlayerCharacter = Cast<APushPlayerCharacter>(InPawn);
 	if (PushPlayerCharacter)
 	{
-		PushPlayerCharacter->ServerSideInit();
 		PushPlayerCharacter->SetGenericTeamId(TeamID);
+		PushPlayerCharacter->ServerSideInit();
 	}
 }
 
@@ -59,6 +59,6 @@ void APushPlayerController::SpawnGameplayWidget()
 	if (GameplayWidget)
 	{
 		GameplayWidget->AddToViewport();
-		GameplayWidget->ConfigureAbilities(PushPlayerCharacter->GetAbilities());
+		GameplayWidget->ConfigureAbilities(PushPlayerCharacter->GetDisplayInputActivatedAbilities());
 	}
 }

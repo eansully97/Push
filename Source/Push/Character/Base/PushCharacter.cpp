@@ -15,6 +15,7 @@
 #include "Push/PushGameplayTags.h"
 #include "Push/GAS/Components/PushAbilitySystemComponent.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/Player/States/PushPlayerState.h"
 #include "Push/Widgets/Overhead/OverheadWidget.h"
 
 APushCharacter::APushCharacter()
@@ -29,26 +30,24 @@ APushCharacter::APushCharacter()
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	PushAbilitySystemComponent = CreateDefaultSubobject<UPushAbilitySystemComponent>("PushAbilitySystemComponent");
+	PushAbilitySystemComponent->SetIsReplicated(true);
+	PushAbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 	PushAttributeSet = CreateDefaultSubobject<UPushAttributeSet>("PushAttributeSet");
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverheadWidgetComponent");
 	OverheadWidgetComponent->SetupAttachment(GetRootComponent());
 
 	PerceptionStimuliSourceComponent = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>("AI Perception Stimulus Source Component");
-
-	BindChangeDelegates();
 }
 
 void APushCharacter::ServerSideInit()
 {
-	PushAbilitySystemComponent->InitAbilityActorInfo(this,this);
-	PushAbilitySystemComponent->ApplyInitialEffects();
-	PushAbilitySystemComponent->GiveInitialAbilities();
+	InitializeAbilitySystem();
 }
 
 void APushCharacter::ClientSideInit()
 {
-	PushAbilitySystemComponent->InitAbilityActorInfo(this,this);
+	InitializeAbilitySystem();
 }
 
 void APushCharacter::BeginPlay()
@@ -71,6 +70,13 @@ void APushCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void APushCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	ClientSideInit();
+}
+
 void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -78,15 +84,91 @@ void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ThisClass, TeamID)
 }
 
+void APushCharacter::InitializeAbilitySystem()
+{
+	ActiveAbilitySystemComponent = ResolveAbilitySystemComponent();
+	ActiveAttributeSet = ResolveAttributeSet();
+
+	if (!ActiveAbilitySystemComponent)
+		return;
+
+	if (ActiveAbilitySystemComponent != PushAbilitySystemComponent)
+	{
+		PushAbilitySystemComponent->SetIsReplicated(false);
+		ActiveAbilitySystemComponent->InitializeDefaultsFrom(PushAbilitySystemComponent);
+	}
+
+	ActiveAbilitySystemComponent->InitAbilityActorInfo(ActiveAbilitySystemComponent->GetOwner(), this);
+	BindChangeDelegates();
+
+	if (HasAuthority())
+	{
+		ActiveAbilitySystemComponent->ApplyInitialEffects();
+		ActiveAbilitySystemComponent->GiveInitialAbilities();
+	}
+
+	if (HasActorBegunPlay())
+	{
+		ConfigureOverheadWidget();
+	}
+}
+
+UPushAbilitySystemComponent* APushCharacter::ResolveAbilitySystemComponent() const
+{
+	if (const APushPlayerState* PushPlayerState = GetPlayerState<APushPlayerState>())
+	{
+		if (UPushAbilitySystemComponent* PlayerStateASC = PushPlayerState->GetPushAbilitySystemComponent())
+		{
+			return PlayerStateASC;
+		}
+	}
+
+	return PushAbilitySystemComponent;
+}
+
+UPushAttributeSet* APushCharacter::ResolveAttributeSet() const
+{
+	if (const APushPlayerState* PushPlayerState = GetPlayerState<APushPlayerState>())
+	{
+		if (UPushAttributeSet* PlayerStateAttributeSet = PushPlayerState->GetPushAttributeSet())
+		{
+			return PlayerStateAttributeSet;
+		}
+	}
+
+	return PushAttributeSet;
+}
+
 void APushCharacter::BindChangeDelegates()
 {
-	if (PushAbilitySystemComponent)
+	ClearChangeDelegates();
+
+	if (ActiveAbilitySystemComponent)
 	{
-		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::DeathTagUpdated);
-		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).AddUObject(this, &ThisClass::StunTagUpdated);
-		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).AddUObject(this, &ThisClass::StealthTagUpdated);
-		PushAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).AddUObject(this, &ThisClass::AimingTagUpdated);
+		DeadTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead)
+			.AddUObject(this, &ThisClass::DeathTagUpdated);
+		StunTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun)
+			.AddUObject(this, &ThisClass::StunTagUpdated);
+		StealthTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth)
+			.AddUObject(this, &ThisClass::StealthTagUpdated);
+		AimingTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming)
+			.AddUObject(this, &ThisClass::AimingTagUpdated);
+
+		BoundAbilitySystemComponent = ActiveAbilitySystemComponent;
 	}
+}
+
+void APushCharacter::ClearChangeDelegates()
+{
+	if (!BoundAbilitySystemComponent)
+		return;
+
+	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).Remove(DeadTagDelegateHandle);
+	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).Remove(StunTagDelegateHandle);
+	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).Remove(StealthTagDelegateHandle);
+	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).Remove(AimingTagDelegateHandle);
+
+	BoundAbilitySystemComponent = nullptr;
 }
 
 void APushCharacter::DeathTagUpdated(const FGameplayTag Tag, int32 Count)
@@ -162,6 +244,9 @@ bool APushCharacter::IsLocallyControlledByPlayer() const
 
 void APushCharacter::ConfigureOverheadWidget()
 {
+	if (GetNetMode() == NM_DedicatedServer)
+		return;
+
 	if (!OverheadWidgetComponent)
 		return;
 
@@ -204,6 +289,9 @@ void APushCharacter::SetOverheadWidgetVisibility(bool Hidden)
 
 void APushCharacter::UpdateOverheadWidgetVisibility()
 {
+	if (GetNetMode() == NM_DedicatedServer)
+		return;
+
 	if (IsLocallyControlledByPlayer())
 	{
 		SetOverheadWidgetVisibility(true);
@@ -241,14 +329,18 @@ void APushCharacter::SetStatusGaugeEnabled(bool bEnabled)
 
 bool APushCharacter::IsDead() const
 {
-	return GetAbilitySystemComponent()->HasMatchingGameplayTag(PushGameplayTags::Status_Dead);
+	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	return ASC && ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead);
 }
 
 void APushCharacter::RespawnImmediately()
 {
 	if (HasAuthority())
 	{
-		GetAbilitySystemComponent()->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Dead));
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			ASC->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Dead));
+		}
 	}
 }
 
@@ -256,9 +348,9 @@ void APushCharacter::StartDeathSequence()
 {
 	OnDead();
 
-	if (PushAbilitySystemComponent)
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		PushAbilitySystemComponent->CancelAllAbilities();
+		ASC->CancelAllAbilities();
 	}
 
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
@@ -309,9 +401,9 @@ void APushCharacter::Respawn()
 		}
  	}
 
-	if (PushAbilitySystemComponent)
+	if (ActiveAbilitySystemComponent)
 	{
-		PushAbilitySystemComponent->ApplyFullStatEffect();
+		ActiveAbilitySystemComponent->ApplyFullStatEffect();
 	}
 }
 
@@ -405,7 +497,8 @@ void APushCharacter::OnStealthRemoved()
 
 bool APushCharacter::IsInStealth() const
 {
-	return PushAbilitySystemComponent->HasMatchingGameplayTag(PushGameplayTags::Status_Stealth);
+	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	return ASC && ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stealth);
 }
 
 void APushCharacter::SetGenericTeamId(const FGenericTeamId& NewTeamID)
@@ -440,22 +533,42 @@ void APushCharacter::SetAIPerceptionStimuliSourceEnabled(bool bEnabled)
 
 UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const
 {
-	return PushAbilitySystemComponent;
+	return ResolveAbilitySystemComponent();
 }
 
-const TMap<EAbilityInputID, TSubclassOf<UGameplayAbility>>& APushCharacter::GetAbilities() const
+TArray<FPushInputActivatedAbilityDisplayData> APushCharacter::GetDisplayInputActivatedAbilities() const
 {
-	return PushAbilitySystemComponent->GetAbilities();
+	if (const UPushAbilitySystemComponent* ASC = ResolveAbilitySystemComponent())
+	{
+		return ASC->GetDisplayInputActivatedAbilities();
+	}
+
+	return {};
 }
 
 bool APushCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
                                                              const FGameplayEventData& EventData)
 {
-	return true;
+	return IsAllowedClientGameplayEvent(EventTag, EventData);
 }
 
 void APushCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayTag& EventTag,
                                                                    const FGameplayEventData& EventData)
 {
+	if (!IsAllowedClientGameplayEvent(EventTag, EventData))
+		return;
+
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
+}
+
+bool APushCharacter::IsAllowedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
+{
+	const bool bIsAllowedInputEvent =
+		EventTag == PushGameplayTags::Input_Ability_BasicAttack_Pressed
+		|| EventTag == PushGameplayTags::Input_Ability_SecondaryAttack_Pressed;
+
+	return bIsAllowedInputEvent
+		&& EventData.TargetData.Num() == 0
+		&& EventData.Instigator == nullptr
+		&& EventData.Target == nullptr;
 }

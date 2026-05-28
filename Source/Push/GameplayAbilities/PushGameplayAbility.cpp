@@ -13,6 +13,8 @@
 
 UPushGameplayAbility::UPushGameplayAbility()
 {
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	ActivationBlockedTags.AddTag(PushGameplayTags::Status_Stun);
 }
 

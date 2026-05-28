@@ -5,6 +5,12 @@
 
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
+#include "Push/Player/States/PushPlayerState.h"
+
+APushGameMode::APushGameMode()
+{
+	PlayerStateClass = APushPlayerState::StaticClass();
+}
 
 APlayerController* APushGameMode::SpawnPlayerController(ENetRole InRemoteRole, const FString& Options)
 {
