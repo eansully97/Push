@@ -4,6 +4,7 @@
 #include "GA_GroundBlast.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Push/GAS/Targeting/TargetActor_GroundPick.h"
@@ -20,7 +21,7 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                       const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                       const FGameplayEventData* TriggerEventData)
 {
-	if (!K2_CommitAbility())
+	if (!K2_CommitAbilityCost())
 	{
 		K2_EndAbility();
 	}
@@ -57,6 +58,15 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 {
 	BP_ApplyGameplayEffectToTarget(TargetDataHandle, DamageEffectDef.DamageEffectClass, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	PushTargets(TargetDataHandle, DamageEffectDef.PushVelocity);
+
+	FGameplayCueParameters CueParams;
+	CueParams.Location = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 1).ImpactPoint;
+	CueParams.RawMagnitude = TargetAreaRadius;
+
+	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(GameplayCueTag, CueParams);
+	GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
+	
+	K2_CommitAbilityCooldown();
 	K2_EndAbility();
 }
 

@@ -27,14 +27,10 @@ void ATargetActor_GroundPick::Tick(float DeltaTime)
 void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
 {
 	TArray<FOverlapResult> OverlapResults;
-	
 	FCollisionObjectQueryParams QueryParams;
 	QueryParams.AddObjectTypesToQuery(ECC_Pawn);
-
 	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(TargetAreaRadius);
-	
 	GetWorld()->OverlapMultiByObjectType(OverlapResults, GetActorLocation(),FQuat::Identity, QueryParams, CollisionShape);
-
 	TSet<AActor*> TargetActors;
 
 	const IGenericTeamAgentInterface* OwnerTeamInterface = nullptr;
@@ -55,7 +51,9 @@ void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
 	}
 
 	FGameplayAbilityTargetDataHandle TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(TargetActors.Array(), false);
-	
+	FGameplayAbilityTargetData_SingleTargetHit* HitLocation = new FGameplayAbilityTargetData_SingleTargetHit;
+	HitLocation->HitResult.ImpactPoint = GetActorLocation();
+	TargetData.Add(HitLocation);
 	TargetDataReadyDelegate.Broadcast(TargetData);
 }
 

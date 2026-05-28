@@ -49,6 +49,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Ability_Infiltrate, "GameplayCue.Ability.Infiltrate");
 
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Crunch_Punch, "GameplayCue.Hit.Crunch.Punch");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Crunch_GroundBlast, "GameplayCue.Hit.Crunch.GroundBlast");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Basic, "GameplayCue.Hit.Countess.Basic");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Finish, "GameplayCue.Hit.Countess.Finish");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Siphon, "GameplayCue.Hit.Countess.Siphon");

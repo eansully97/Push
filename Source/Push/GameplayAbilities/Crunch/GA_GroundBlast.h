@@ -30,6 +30,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	FGenericDamageEffectDef DamageEffectDef;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Cue")
+	FGameplayTag GameplayCueTag;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	float TargetAreaRadius = 300.f;
 
