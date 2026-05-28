@@ -13,7 +13,8 @@
 
 UGA_Infiltrate::UGA_Infiltrate()
 {
-	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
+	AbilityTags.AddTag(PushGameplayTags::Ability_Countess_Infiltrate);
+	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 
 void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,

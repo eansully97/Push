@@ -12,10 +12,9 @@ UGA_Status_Launched::UGA_Status_Launched()
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 	TriggerData.TriggerTag = GetLaunchAbilityActivationTag();
 
+	AbilityTags.AddTag(PushGameplayTags::GameplayEvent_Status_Launched);
 	ActivationOwnedTags.AddTag(PushGameplayTags::Status_Launched);
-	
 	ActivationBlockedTags.RemoveTag(PushGameplayTags::Status_Stun);
-
 	AbilityTriggers.Add(TriggerData);
 }
 

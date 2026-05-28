@@ -11,7 +11,8 @@
 
 UGA_UpperCut::UGA_UpperCut()
 {
-	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
+	AbilityTags.AddTag(PushGameplayTags::Ability_Crunch_Uppercut);
+	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 
 void UGA_UpperCut::ActivateAbility(

@@ -144,3 +144,18 @@ void UPushGameplayAbility::PushTarget(AActor* Target, const FVector& PushVelocit
 		EventData
 	);
 }
+
+void UPushGameplayAbility::PushTargets(TArray<AActor*>& Targets, const FVector& PushVelocity)
+{
+	for (AActor* Target : Targets)
+	{
+		PushTarget(Target, PushVelocity);
+	}
+}
+
+void UPushGameplayAbility::PushTargets(const FGameplayAbilityTargetDataHandle& TargetDataHandle,
+	const FVector& PushVelocity)
+{
+	TArray<AActor*> Targets = UAbilitySystemBlueprintLibrary::GetAllActorsFromTargetData(TargetDataHandle);
+	PushTargets(Targets, PushVelocity);
+}

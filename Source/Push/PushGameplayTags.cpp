@@ -23,6 +23,7 @@ namespace PushGameplayTags
 
 	// Cooldown
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Crunch_Uppercut, "Cooldown.Ability.Crunch.Uppercut");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Crunch_GroundBlast, "Cooldown.Ability.Crunch.GroundBlast");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Infiltrate, "Cooldown.Ability.Countess.Infiltrate");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Siphon, "Cooldown.Ability.Countess.Siphon");
 

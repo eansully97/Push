@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "Push/Push.h"
 #include "Push/PushGameplayTags.h"
 #include "Push/GAS/Components/PushAbilitySystemComponent.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
@@ -21,6 +22,9 @@ APushCharacter::APushCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_SpringArm, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Target, ECR_Ignore);
 	
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 

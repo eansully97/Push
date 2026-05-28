@@ -19,7 +19,8 @@
 
 UGA_Siphon::UGA_Siphon()
 {
-	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability_BasicAttack);
+	AbilityTags.AddTag(PushGameplayTags::Ability_Countess_Siphon);
+	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
 }
 
 void UGA_Siphon::ActivateAbility(

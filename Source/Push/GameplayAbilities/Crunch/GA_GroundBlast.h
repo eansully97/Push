@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Push/PushGameplayAbilityTypes.h"
 #include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "GA_GroundBlast.generated.h"
 
@@ -25,6 +26,15 @@ private:
 
 	UFUNCTION()
 	void TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	FGenericDamageEffectDef DamageEffectDef;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float TargetAreaRadius = 300.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
+	float TargetTraceRange = 2000.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	UAnimMontage* AbilityMontage;
