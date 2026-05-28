@@ -372,6 +372,11 @@ void APushCharacter::StartDeathSequence()
 		MovementComponent->DisableMovement();
 	}
 	
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+	
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false);
 	SetAIPerceptionStimuliSourceEnabled(false);
@@ -392,6 +397,11 @@ void APushCharacter::Respawn()
 
 	OnRespawn();
 	SetRagdollEnabled(false);
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	}
 
 	if (!IsInStealth())
 	{

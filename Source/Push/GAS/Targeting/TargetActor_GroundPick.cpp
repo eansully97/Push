@@ -6,12 +6,18 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GenericTeamAgentInterface.h"
 #include "Abilities/GameplayAbility.h"
+#include "Components/DecalComponent.h"
 #include "Engine/OverlapResult.h"
 #include "Push/Push.h"
 
 ATargetActor_GroundPick::ATargetActor_GroundPick()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	SetRootComponent(CreateDefaultSubobject<USceneComponent>("Root"));
+	
+	DecalComponent = CreateDefaultSubobject<UDecalComponent>("Decal Component");
+	DecalComponent->SetupAttachment(GetRootComponent());
 }
 
 void ATargetActor_GroundPick::Tick(float DeltaTime)
@@ -100,4 +106,10 @@ void ATargetActor_GroundPick::SetTargetOptions(bool bTargetFriendly, bool bTarge
 {
 	bShouldTargetFriendly = bTargetFriendly;
 	bShouldTargetEnemy = bTargetEnemy;
+}
+
+void ATargetActor_GroundPick::SetTargetAreaRadius(const float NewRadius)
+{
+	TargetAreaRadius = NewRadius;
+	DecalComponent->DecalSize = FVector(NewRadius);
 }

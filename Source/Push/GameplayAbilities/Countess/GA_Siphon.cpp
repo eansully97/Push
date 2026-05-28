@@ -150,7 +150,7 @@ void UGA_Siphon::StartSiphonTimers()
 		return;
 	}
 
-	PerformDamageTick();
+	World->GetTimerManager().SetTimerForNextTick(this, &ThisClass::PerformDamageTick);
 
 	World->GetTimerManager().SetTimer(
 		DamageTimerHandle,
