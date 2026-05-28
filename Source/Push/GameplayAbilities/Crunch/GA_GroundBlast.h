@@ -43,7 +43,10 @@ private:
 	float TargetTraceRange = 2000.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	UAnimMontage* AbilityMontage;
+	UAnimMontage* TargetingAbilityMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	UAnimMontage* CastAbilityMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	TSubclassOf<ATargetActor_GroundPick> TargetActorClass;

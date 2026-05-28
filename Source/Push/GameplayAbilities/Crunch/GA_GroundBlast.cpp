@@ -31,7 +31,7 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	UAbilityTask_PlayMontageAndWait* MontageWaitTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AbilityMontage);
+	UAbilityTask_PlayMontageAndWait* MontageWaitTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, TargetingAbilityMontage);
 	MontageWaitTask->OnBlendOut.AddDynamic(this, &ThisClass::K2_EndAbility);
 	MontageWaitTask->OnCancelled.AddDynamic(this, &ThisClass::K2_EndAbility);
 	MontageWaitTask->OnInterrupted.AddDynamic(this, &ThisClass::K2_EndAbility);
@@ -85,6 +85,11 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 		GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
 
 		K2_CommitAbilityCooldown();
+	}
+
+	if (UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance())
+	{
+		OwnerAnimInstance->Montage_Play(CastAbilityMontage);
 	}
 
 	K2_EndAbility();

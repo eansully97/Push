@@ -359,6 +359,7 @@ void APushCharacter::RespawnImmediately()
 
 void APushCharacter::StartDeathSequence()
 {
+	DisableCapsuleCollisionForDeath();
 	OnDead();
 
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
@@ -370,11 +371,6 @@ void APushCharacter::StartDeathSequence()
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
-	}
-	
-	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
-	{
-		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	}
 	
 	PlayDeathAnimation();
@@ -397,11 +393,6 @@ void APushCharacter::Respawn()
 
 	OnRespawn();
 	SetRagdollEnabled(false);
-
-	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
-	{
-		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	}
 
 	if (!IsInStealth())
 	{
@@ -478,7 +469,7 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 		MeshComponent->SetRelativeTransform(RelativeMeshTransform);
 		MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		RestoreAliveCapsuleCollision();
 
 		if (MovementComponent)
 		{
@@ -486,6 +477,47 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 			MovementComponent->SetMovementMode(MOVE_Walking);
 		}
 	}
+}
+
+void APushCharacter::CacheAliveCapsuleCollisionState()
+{
+	if (const UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		AliveCapsuleCollisionProfileName = CapsuleComp->GetCollisionProfileName();
+		AliveCapsuleCollisionEnabled = CapsuleComp->GetCollisionEnabled();
+		AliveCapsuleObjectType = CapsuleComp->GetCollisionObjectType();
+		AliveCapsuleCollisionResponses = CapsuleComp->GetCollisionResponseToChannels();
+	}
+}
+
+void APushCharacter::DisableCapsuleCollisionForDeath()
+{
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		if (!bCapsuleCollisionDisabledForDeath)
+		{
+			CacheAliveCapsuleCollisionState();
+		}
+
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		bCapsuleCollisionDisabledForDeath = true;
+	}
+}
+
+void APushCharacter::RestoreAliveCapsuleCollision()
+{
+	if (!bCapsuleCollisionDisabledForDeath)
+		return;
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionProfileName(AliveCapsuleCollisionProfileName);
+		CapsuleComp->SetCollisionObjectType(AliveCapsuleObjectType);
+		CapsuleComp->SetCollisionResponseToChannels(AliveCapsuleCollisionResponses);
+		CapsuleComp->SetCollisionEnabled(AliveCapsuleCollisionEnabled);
+	}
+
+	bCapsuleCollisionDisabledForDeath = false;
 }
 
 void APushCharacter::OnDead()

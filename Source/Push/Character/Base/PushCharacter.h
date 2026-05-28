@@ -119,12 +119,20 @@ private:
 	void Respawn();
 	void DeathMontageFinished();
 	void SetRagdollEnabled(bool bEnabled);
+	void CacheAliveCapsuleCollisionState();
+	void DisableCapsuleCollisionForDeath();
+	void RestoreAliveCapsuleCollision();
 
 	virtual void OnDead();
 	virtual void OnRespawn();
 
 	FTimerHandle DeathMontageTimerHandle;
 	FTransform RelativeMeshTransform;
+	FName AliveCapsuleCollisionProfileName;
+	ECollisionEnabled::Type AliveCapsuleCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
+	ECollisionChannel AliveCapsuleObjectType = ECC_Pawn;
+	FCollisionResponseContainer AliveCapsuleCollisionResponses;
+	bool bCapsuleCollisionDisabledForDeath = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	UAnimMontage* DeathMontage;
