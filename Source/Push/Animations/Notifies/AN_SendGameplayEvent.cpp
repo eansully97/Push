@@ -27,7 +27,7 @@ FString UAN_SendGameplayEvent::GetNotifyName_Implementation() const
 	{
 		TArray<FName> TagNames;
 		UGameplayTagsManager::Get().SplitGameplayTagFName(EventTag, TagNames);
-		return "None";//TagNames.Last().ToString();
+		return TagNames.Last().ToString();
 	}
 	return "None";
 }

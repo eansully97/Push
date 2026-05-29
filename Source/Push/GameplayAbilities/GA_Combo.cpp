@@ -54,17 +54,17 @@ void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 FGameplayTag UGA_Combo::GetComboChangedEventTag()
 {
-	return PushGameplayTags::Ability_BasicAttack_Combo_Change;
+	return PushGameplayTags::GameplayEvent_Ability_Combo_Change;
 }
 
 FGameplayTag UGA_Combo::GetComboChangedEventEndTag()
 {
-	return PushGameplayTags::Ability_BasicAttack_Combo_Change_End;
+	return PushGameplayTags::GameplayEvent_Ability_Combo_Change_End;
 }
 
 FGameplayTag UGA_Combo::GetComboTargetEventTag()
 {
-	return PushGameplayTags::Ability_Damage_Combo;
+	return PushGameplayTags::GameplayEvent_Ability_Combo_Damage;
 }
 
 void UGA_Combo::SetupWaitComboInputPressed()
@@ -102,6 +102,11 @@ TSubclassOf<UGameplayEffect> UGA_Combo::GetDamageEffectForCurrentCombo() const
 
 void UGA_Combo::ComboChangedEventReceived(FGameplayEventData Data)
 {
+	if (Data.TargetData.Num() > 0)
+	{
+		return;
+	}
+
 	FGameplayTag EventTag = Data.EventTag;
 
 	if (EventTag == GetComboChangedEventEndTag())
@@ -117,6 +122,11 @@ void UGA_Combo::ComboChangedEventReceived(FGameplayEventData Data)
 
 void UGA_Combo::DoDamage(FGameplayEventData Data)
 {
+	if (Data.TargetData.Num() == 0)
+	{
+		return;
+	}
+
 	TArray<FHitResult> HitResults = GetHitResultFromSweepLocationTargetData(Data.TargetData, TargetSweepSphereRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
 
 	for (const auto& HitResult : HitResults)

@@ -16,7 +16,10 @@ UGA_Infiltrate::UGA_Infiltrate()
 	FGameplayTagContainer AssetTags;
 	AssetTags.AddTag(PushGameplayTags::Ability_Countess_Infiltrate);
 	SetAssetTags(AssetTags);
+
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
+	StealthTag = PushGameplayTags::Status_Stealth;
+	StartStealthEventTag = PushGameplayTags::GameplayEvent_Ability_Window_Stealth;
 }
 
 void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -34,13 +37,13 @@ void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		StartLaunching();
 
 		UAbilityTask_WaitGameplayEvent* WaitStealthEvent =
-	UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		StartStealthEventTag,
-		nullptr,
-		true,
-		true
-	);
+			UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+				this,
+				StartStealthEventTag,
+				nullptr,
+				true,
+				true
+			);
 
 		WaitStealthEvent->EventReceived.AddDynamic(this, &ThisClass::OnStartStealthEvent);
 		WaitStealthEvent->ReadyForActivation();
@@ -56,14 +59,11 @@ void UGA_Infiltrate::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		WaitStealthAddedTask->Added.AddDynamic(this, &ThisClass::OnStealthAdded);
 		WaitStealthAddedTask->ReadyForActivation();
 
-		UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Activated. StartStealthEventTag=%s StealthTag=%s"),
-		*StartStealthEventTag.ToString(),
-		*StealthTag.ToString());
-
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		if (!AbilityMontage)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Has StealthTag after GE apply = %s"),
-				ASC->HasMatchingGameplayTag(StealthTag) ? TEXT("TRUE") : TEXT("FALSE"));
+			UE_LOG(LogTemp, Error, TEXT("Infiltrate: AbilityMontage is null."));
+			K2_EndAbility();
+			return;
 		}
 
 		UAbilityTask_PlayMontageAndWait* MontageTask =
@@ -135,19 +135,12 @@ void UGA_Infiltrate::OnStealthAdded()
 
 	WaitTagRemovedTask->Removed.AddDynamic(this, &ThisClass::OnStealthRemoved);
 	WaitTagRemovedTask->ReadyForActivation();
-
-	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: StealthTag added. Basic attack unblocked. Waiting for removal: %s"),
-		*StealthTag.ToString());
 }
 
 void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Start stealth event received. Authority=%s"),
-	K2_HasAuthority() ? TEXT("TRUE") : TEXT("FALSE"));
-
 	if (!K2_HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Ignoring stealth apply on non-authority"));
 		return;
 	}
 
@@ -158,17 +151,13 @@ void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 		return;
 	}
 
-	FActiveGameplayEffectHandle StealthEffectHandle =
-		ApplyGameplayEffectToOwner(
-			GetCurrentAbilitySpecHandle(),
-			GetCurrentActorInfo(),
-			GetCurrentActivationInfo(),
-			StealthEffectClass.GetDefaultObject(),
-			1.f
-		);
-
-	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Applied Stealth GE. ValidHandle=%s"),
-		StealthEffectHandle.IsValid() ? TEXT("TRUE") : TEXT("FALSE"));
+	ApplyGameplayEffectToOwner(
+		GetCurrentAbilitySpecHandle(),
+		GetCurrentActorInfo(),
+		GetCurrentActivationInfo(),
+		StealthEffectClass.GetDefaultObject(),
+		1.f
+	);
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (!ASC)
@@ -179,9 +168,6 @@ void UGA_Infiltrate::OnStartStealthEvent(FGameplayEventData Payload)
 	}
 
 	const bool bHasStealthTag = ASC->HasMatchingGameplayTag(StealthTag);
-
-	UE_LOG(LogTemp, Warning, TEXT("Infiltrate: Has StealthTag after GE apply = %s"),
-		bHasStealthTag ? TEXT("TRUE") : TEXT("FALSE"));
 
 	if (!bHasStealthTag)
 	{

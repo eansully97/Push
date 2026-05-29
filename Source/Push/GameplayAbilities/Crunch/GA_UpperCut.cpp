@@ -70,7 +70,7 @@ void UGA_UpperCut::ActivateAbility(
 
 FGameplayTag UGA_UpperCut::GetUpperCutLaunchTag()
 {
-	return PushGameplayTags::GameplayEvent_Ability_Crunch_Uppercut_Launch;
+	return PushGameplayTags::GameplayEvent_Ability_Window_Launch;
 }
 
 const FGenericDamageEffectDef* UGA_UpperCut::GetDamageEffectDefinitionForCurrentCombo() const
@@ -127,6 +127,11 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 
 void UGA_UpperCut::HandleComboChangeEvent(FGameplayEventData EventData)
 {
+	if (EventData.TargetData.Num() > 0)
+	{
+		return;
+	}
+
 	FGameplayTag EventTag = EventData.EventTag;
 
 	if (EventTag == UGA_Combo::GetComboChangedEventEndTag())
@@ -167,6 +172,11 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 {
 	if (K2_HasAuthority())
 	{
+		if (EventData.TargetData.Num() == 0)
+		{
+			return;
+		}
+
 		TArray<FHitResult> TargetHitResults =
 			GetHitResultFromSweepLocationTargetData(
 				EventData.TargetData,

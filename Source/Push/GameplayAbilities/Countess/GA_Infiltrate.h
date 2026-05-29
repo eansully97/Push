@@ -30,7 +30,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
 	float ForwardLaunchSpeed = 1000.f;
 	
-	UPROPERTY(EditDefaultsOnly, Category="Infiltrate")
+	UPROPERTY(EditDefaultsOnly, Category = "Infiltrate")
 	TSubclassOf<UGameplayEffect> StealthEffectClass;
 
 	UFUNCTION()
@@ -48,9 +48,9 @@ private:
 	bool bEndingAbility = false;
 	bool bEndingFromStealthRemoval = false;
 
-	UPROPERTY(EditDefaultsOnly, Category="Infiltrate")
+	UPROPERTY(EditDefaultsOnly, Category = "Infiltrate", meta = (Categories = "Status"))
 	FGameplayTag StealthTag;
 
-	UPROPERTY(EditDefaultsOnly, Category="Infiltrate")
+	UPROPERTY(EditDefaultsOnly, Category = "Infiltrate", meta = (Categories = "GameplayEvent.Ability.Window"))
 	FGameplayTag StartStealthEventTag;
 };

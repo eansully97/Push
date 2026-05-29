@@ -7,21 +7,12 @@ namespace PushGameplayTags
 	// Ability
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_SecondaryAttack);
-
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo02);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo03);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_Combo04);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_BasicAttack_Combo_Change_End);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Crunch_Uppercut);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Crunch_GroundBlast);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Infiltrate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Siphon);
-
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Damage_Combo);
 
 	// Cooldown
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown);
@@ -35,9 +26,15 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_SecondaryAttack_Pressed);
 
 	// Gameplay Events
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Crunch_Uppercut_Launch);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Stealth);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Launched);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Window_Launch);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Window_Stealth);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Change);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Change_Combo02);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Change_Combo03);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Change_Combo04);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Change_End);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Damage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Launch);
 
 	// Status
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Dead);
@@ -48,8 +45,8 @@ namespace PushGameplayTags
 
 	// Gameplay Cues
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_CameraShake);
-
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Ability_Infiltrate);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Status_Stealth);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Status_Stealth_Countess_Infiltrate);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Crunch_Punch);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Crunch_GroundBlast);

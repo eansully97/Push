@@ -13,7 +13,7 @@ UGA_Status_Launched::UGA_Status_Launched()
 	TriggerData.TriggerTag = GetLaunchAbilityActivationTag();
 
 	FGameplayTagContainer AssetTags;
-	AssetTags.AddTag(PushGameplayTags::GameplayEvent_Status_Launched);
+	AssetTags.AddTag(PushGameplayTags::GameplayEvent_Status_Launch);
 	SetAssetTags(AssetTags);
 	ActivationOwnedTags.AddTag(PushGameplayTags::Status_Launched);
 	ActivationBlockedTags.RemoveTag(PushGameplayTags::Status_Stun);
@@ -51,5 +51,5 @@ void UGA_Status_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 FGameplayTag UGA_Status_Launched::GetLaunchAbilityActivationTag()
 {
-	return PushGameplayTags::GameplayEvent_Status_Launched;
+	return PushGameplayTags::GameplayEvent_Status_Launch;
 }

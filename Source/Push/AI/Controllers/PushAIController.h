@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "GameplayTagContainer.h"
+#include "TimerManager.h"
 #include "PushAIController.generated.h"
 
 UCLASS()
@@ -35,11 +36,6 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "AI Behavior")
 	bool bIsPawnDead = false;
 
-	TWeakObjectPtr<AActor> TargetTagEventActor;
-	FDelegateHandle TargetDeadTagDelegateHandle;
-	FDelegateHandle TargetStunTagDelegateHandle;
-	FDelegateHandle TargetStealthTagDelegateHandle;
-
 	UFUNCTION()
 	void TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus);
 
@@ -48,21 +44,36 @@ private:
 
 	AActor* GetCurrentTarget() const;
 	void SetCurrentTarget(AActor* NewTarget);
-	bool IsInvalidTargetActor(AActor* ActorToCheck) const;
+	void ClearCurrentTargetBlackboardValue();
+
+	bool IsDeadTarget(AActor* ActorToCheck) const;
+	bool IsStealthedTarget(AActor* ActorToCheck) const;
 	void ForceForgetActor(AActor* ActorToForget);
-	bool ForgetActorIfInvalid(AActor* ActorToForget);
+	bool ForgetActorIfDead(AActor* ActorToForget);
+	void HideTargetForStealth(AActor* TargetActor);
+	void RememberHiddenTarget(AActor* TargetActor);
+	void ClearRememberedTarget();
+	void ExpireRememberedTarget();
+	void RestoreRememberedTargetIfValid();
+	float GetTargetMemoryDuration() const;
 
 	AActor* GetNextPerceivedActor();
 
-	void BindTargetInvalidTagEvents(AActor* TargetActor);
-	void UnbindTargetInvalidTagEvents();
-	void ResetTargetInvalidTagHandles();
-	void TargetInvalidTagUpdated(const FGameplayTag Tag, int32 Count);
+	void BindTargetTagEvents(AActor* TargetActor);
+	void UnbindTargetTagEvents();
+	void ResetTargetTagHandles();
+	void TargetStateTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	void ClearAndDisableAllSenses();
 	void EnableAllSenses();
 	
 	void PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count);
-	void PawnStunTagUpdated(const FGameplayTag Tag, int32 Count);
+
+	TWeakObjectPtr<AActor> TargetTagEventActor;
+	FDelegateHandle TargetDeadTagDelegateHandle;
+	FDelegateHandle TargetStealthTagDelegateHandle;
+
+	TWeakObjectPtr<AActor> RememberedTarget;
+	FTimerHandle RememberedTargetTimerHandle;
 };
 
