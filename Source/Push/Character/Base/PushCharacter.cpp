@@ -4,6 +4,7 @@
 #include "PushCharacter.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,6 +18,7 @@
 #include "Push/GAS/Attributes/PushAttributeSet.h"
 #include "Push/Player/States/PushPlayerState.h"
 #include "Push/Widgets/Overhead/OverheadWidget.h"
+#include "UObject/UObjectHash.h"
 
 APushCharacter::APushCharacter()
 {
@@ -111,13 +113,14 @@ void APushCharacter::InitializeAbilitySystem()
 		ActiveAbilitySystemComponent->InitializeDefaultsFrom(PushAbilitySystemComponent);
 	}
 
+	RegisterAttributeSetSubobjects(ActiveAbilitySystemComponent->GetOwner());
+	RegisterAttributeSetSubobjects(this);
 	ActiveAbilitySystemComponent->InitAbilityActorInfo(ActiveAbilitySystemComponent->GetOwner(), this);
 	BindChangeDelegates();
 
 	if (HasAuthority())
 	{
-		ActiveAbilitySystemComponent->ApplyInitialEffects();
-		ActiveAbilitySystemComponent->GiveInitialAbilities();
+		ActiveAbilitySystemComponent->ServerSideInit();
 	}
 
 	if (HasActorBegunPlay())
@@ -150,6 +153,22 @@ UPushAttributeSet* APushCharacter::ResolveAttributeSet() const
 	}
 
 	return PushAttributeSet;
+}
+
+void APushCharacter::RegisterAttributeSetSubobjects(AActor* AttributeSetOwner) const
+{
+	if (!ActiveAbilitySystemComponent || !AttributeSetOwner)
+		return;
+
+	ForEachObjectWithOuter(AttributeSetOwner,
+		[this](UObject* Object)
+		{
+			if (UAttributeSet* AttributeSet = Cast<UAttributeSet>(Object))
+			{
+				ActiveAbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+			}
+		},
+		false);
 }
 
 void APushCharacter::BindChangeDelegates()

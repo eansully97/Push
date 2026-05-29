@@ -21,7 +21,9 @@ class UPushHeroAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 public:
     ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, Intelligence)
+	ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, IntelligenceGrowthRate)
     ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, Strength)
+	ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, StrengthGrowthRate)
     ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, Experience)
     ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, PrevLevelExperience)
     ATTRIBUTE_ACCESSORS(UPushHeroAttributeSet, NextLevelExperience)
@@ -35,9 +37,15 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Strength)
 	FGameplayAttributeData Strength;
+
+	UPROPERTY()
+	FGameplayAttributeData StrengthGrowthRate;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_Experience)
 	FGameplayAttributeData Experience;
+
+	UPROPERTY()
+	FGameplayAttributeData IntelligenceGrowthRate;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PrevLevelExperience)
 	FGameplayAttributeData PrevLevelExperience;

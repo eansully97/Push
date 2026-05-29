@@ -2,6 +2,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Engine/DataTable.h"
 #include "GameplayEffect.h"
 #include "PushGameplayAbilityTypes.generated.h"
 
@@ -80,4 +81,46 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	FVector PushVelocity = FVector();
+};
+
+USTRUCT(BlueprintType)
+struct FHeroBaseStats : public FTableRowBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AActor> Class;
+
+	UPROPERTY(EditAnywhere)
+	float Strength;
+	
+	UPROPERTY(EditAnywhere)
+	float StrengthGrowthRate;
+
+	UPROPERTY(EditAnywhere)
+	float Intelligence;
+
+	UPROPERTY(EditAnywhere)
+	float IntelligenceGrowthRate;
+
+	UPROPERTY(EditAnywhere)
+	float BaseMaxHealth;
+
+	UPROPERTY(EditAnywhere)
+	float BaseMaxMana;
+
+	UPROPERTY(EditAnywhere)
+	float BaseAttackDamage;
+
+	UPROPERTY(EditAnywhere)
+	float BaseSpellPower;
+
+	UPROPERTY(EditAnywhere)
+	float BaseArmor;
+
+	UPROPERTY(EditAnywhere)
+	float BaseSpellResist;
+
+	UPROPERTY(EditAnywhere)
+	float BaseMoveSpeed;
 };

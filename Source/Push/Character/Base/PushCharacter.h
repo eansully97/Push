@@ -15,6 +15,7 @@ class UAIPerceptionStimuliSourceComponent;
 class UWidgetComponent;
 class UPushAbilitySystemComponent;
 class UPushAttributeSet;
+class UAttributeSet;
 
 UCLASS()
 class PUSH_API APushCharacter : public ACharacter, public IAbilitySystemInterface, public IGenericTeamAgentInterface
@@ -51,6 +52,7 @@ private:
 	void InitializeAbilitySystem();
 	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
 	UPushAttributeSet* ResolveAttributeSet() const;
+	void RegisterAttributeSetSubobjects(AActor* AttributeSetOwner) const;
 	void BindChangeDelegates();
 	void ClearChangeDelegates();
 	bool IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;

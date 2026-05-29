@@ -6,6 +6,7 @@
 #include "Push/PushGameplayTags.h"
 #include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {
@@ -14,22 +15,60 @@ UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 	GenericCancelInputID = static_cast<int32>(EAbilityInputID::Cancel);
 }
 
-void UPushAbilitySystemComponent::ApplyInitialEffects()
+void UPushAbilitySystemComponent::InitializeBaseAttributes()
+{
+	if (!BaseStatsData || !GetOwner())
+		return;
+
+	const AActor* StatsActor = GetAvatarActor() ? GetAvatarActor() : GetOwner();
+	const FHeroBaseStats* BaseStats =  nullptr;
+
+	for (const auto& DataPair : BaseStatsData->GetRowMap())
+	{
+		BaseStats = BaseStatsData->FindRow<FHeroBaseStats>(DataPair.Key, "");
+		if (BaseStats && BaseStats->Class && StatsActor->IsA(BaseStats->Class))
+		{
+			break;
+		}
+
+		BaseStats = nullptr;
+	}
+	if (BaseStats)
+	{
+		SetNumericAttributeBase(UPushAttributeSet::GetMaxHealthAttribute(), BaseStats->BaseMaxHealth);
+		SetNumericAttributeBase(UPushAttributeSet::GetMaxManaAttribute(), BaseStats->BaseMaxMana);
+		SetNumericAttributeBase(UPushAttributeSet::GetAttackDamageAttribute(), BaseStats->BaseAttackDamage);
+		SetNumericAttributeBase(UPushAttributeSet::GetSpellPowerAttribute(), BaseStats->BaseSpellPower);
+		SetNumericAttributeBase(UPushAttributeSet::GetArmorAttribute(), BaseStats->BaseArmor);
+		SetNumericAttributeBase(UPushAttributeSet::GetSpellResistAttribute(), BaseStats->BaseSpellResist);
+		SetNumericAttributeBase(UPushAttributeSet::GetMoveSpeedAttribute(), BaseStats->BaseMoveSpeed);
+
+		SetNumericAttributeBase(UPushHeroAttributeSet::GetStrengthAttribute(), BaseStats->Strength);
+		SetNumericAttributeBase(UPushHeroAttributeSet::GetIntelligenceAttribute(), BaseStats->Intelligence);
+		SetNumericAttributeBase(UPushHeroAttributeSet::GetStrengthGrowthRateAttribute(), BaseStats->StrengthGrowthRate);
+		SetNumericAttributeBase(UPushHeroAttributeSet::GetIntelligenceGrowthRateAttribute(), BaseStats->IntelligenceGrowthRate);
+	}
+}
+
+void UPushAbilitySystemComponent::ServerSideInit()
+{
+	InitializeBaseAttributes();
+	ApplyStartupEffects();
+	GiveInitialAbilities();
+}
+
+void UPushAbilitySystemComponent::ApplyStartupEffects()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
 
-	if (bInitialEffectsApplied)
+	if (bStartupEffectsApplied)
 		return;
 
 	ValidateConfiguredData();
-	
-	for (const auto& EffectClass : GetInitialEffects())
-	{
-		AuthApplyGameplayEffect(EffectClass);
-	}
+	AuthApplyGameplayEffect(GetFullStatEffect());
 
-	bInitialEffectsApplied = true;
+	bStartupEffectsApplied = true;
 }
 
 void UPushAbilitySystemComponent::GiveInitialAbilities()
@@ -102,9 +141,9 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 		return;
 
 	GameplayEffects = DefaultsSource->GameplayEffects;
-	InitialEffects = DefaultsSource->InitialEffects;
 	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
 	DefaultAbilities = DefaultsSource->DefaultAbilities;
+	BaseStatsData = DefaultsSource->BaseStatsData;
 }
 
 const TMap<EAbilityInputID, FPushInputActivatedAbility>& UPushAbilitySystemComponent::GetInputActivatedAbilities() const
@@ -167,18 +206,6 @@ TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetDeathEffect() const
 TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetFullStatEffect() const
 {
 	return GetGameplayEffect(EPushGameplayEffectID::FullStat);
-}
-
-TArray<TSubclassOf<UGameplayEffect>> UPushAbilitySystemComponent::GetInitialEffects() const
-{
-	TArray<TSubclassOf<UGameplayEffect>> Effects = InitialEffects;
-	const TSubclassOf<UGameplayEffect> FullStatEffect = GetFullStatEffect();
-	if (FullStatEffect && !Effects.Contains(FullStatEffect))
-	{
-		Effects.Add(FullStatEffect);
-	}
-
-	return Effects;
 }
 
 bool UPushAbilitySystemComponent::ValidateConfiguredData() const
