@@ -47,10 +47,21 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	UAbilityTask_WaitTargetData* WaitTargetDataTask = UAbilityTask_WaitTargetData::WaitTargetData(this, NAME_None, EGameplayTargetingConfirmation::UserConfirmed, TargetActorClass);
 	WaitTargetDataTask->ValidData.AddDynamic(this, &ThisClass::TargetConfirmed);
 	WaitTargetDataTask->Cancelled.AddDynamic(this, &ThisClass::TargetCancelled);
-	WaitTargetDataTask->ReadyForActivation();
 
 	AGameplayAbilityTargetActor* TargetActor = nullptr;
-	if (!WaitTargetDataTask->BeginSpawningActor(this, TargetActorClass, TargetActor) || !TargetActor)
+	const bool bSpawnedTargetActor = WaitTargetDataTask->BeginSpawningActor(this, TargetActorClass, TargetActor);
+	if (bSpawnedTargetActor && TargetActor)
+	{
+		if (ATargetActor_GroundPick* GroundPickActor = Cast<ATargetActor_GroundPick>(TargetActor))
+		{
+			GroundPickActor->SetShouldDrawDebug(ShouldDrawDebug());
+			GroundPickActor->SetTargetAreaRadius(TargetAreaRadius);
+			GroundPickActor->SetTargetTraceRange(TargetTraceRange);
+		}
+	
+		WaitTargetDataTask->FinishSpawningActor(this, TargetActor);
+	}
+	else if (CurrentActorInfo && CurrentActorInfo->IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: failed to spawn target actor %s."),
 			TargetActorClass ? *TargetActorClass->GetName() : TEXT("None"));
@@ -58,14 +69,7 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	if (ATargetActor_GroundPick* GroundPickActor = Cast<ATargetActor_GroundPick>(TargetActor))
-	{
-		GroundPickActor->SetShouldDrawDebug(ShouldDrawDebug());
-		GroundPickActor->SetTargetAreaRadius(TargetAreaRadius);
-		GroundPickActor->SetTargetTraceRange(TargetTraceRange);
-	}
-	
-	WaitTargetDataTask->FinishSpawningActor(this, TargetActor);
+	WaitTargetDataTask->ReadyForActivation();
 }
 
 void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& TargetDataHandle)

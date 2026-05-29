@@ -25,6 +25,11 @@ public:
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MaxHealth)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, Mana)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MaxMana)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, AttackDamage)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, SpellPower)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, Armor)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, SpellResist)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MoveSpeed)
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -35,26 +40,49 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 
-	UFUNCTION()
-	void OnRep_Health(const FGameplayAttributeData& LastValue);
-
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
-
-	UFUNCTION()
-	void OnRep_MaxHealth(const FGameplayAttributeData& LastValue);
 
 	UPROPERTY(ReplicatedUsing = OnRep_Mana)
 	FGameplayAttributeData Mana;
 
-	UFUNCTION()
-	void OnRep_Mana(const FGameplayAttributeData& LastValue);
-
 	UPROPERTY(ReplicatedUsing = OnRep_MaxMana)
 	FGameplayAttributeData MaxMana;
 
+	UPROPERTY(ReplicatedUsing = OnRep_AttackDamage)
+	FGameplayAttributeData AttackDamage;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SpellPower)
+	FGameplayAttributeData SpellPower;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Armor)
+	FGameplayAttributeData Armor;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SpellResist)
+	FGameplayAttributeData SpellResist;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MoveSpeed)
+	FGameplayAttributeData MoveSpeed;
+
+	UFUNCTION()
+	void OnRep_Health(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+    void OnRep_MaxHealth(const FGameplayAttributeData& LastValue);
+    UFUNCTION()
+    void OnRep_Mana(const FGameplayAttributeData& LastValue);
 	UFUNCTION()
 	void OnRep_MaxMana(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+	void OnRep_AttackDamage(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+	void OnRep_SpellPower(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+	void OnRep_Armor(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+	void OnRep_SpellResist(const FGameplayAttributeData& LastValue);
+	UFUNCTION()
+	void OnRep_MoveSpeed(const FGameplayAttributeData& LastValue);
+
 
 
 };

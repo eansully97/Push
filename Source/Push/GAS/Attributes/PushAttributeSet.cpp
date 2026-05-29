@@ -15,6 +15,11 @@ void UPushAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, MaxHealth, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, Mana, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, MaxMana, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, AttackDamage, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, SpellPower, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, Armor, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, SpellResist, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, MoveSpeed, COND_None, REPNOTIFY_Always)
 }
 
 void UPushAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -68,4 +73,29 @@ void UPushAttributeSet::OnRep_Mana(const FGameplayAttributeData& LastValue)
 void UPushAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& LastValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, MaxMana, LastValue)
+}
+
+void UPushAttributeSet::OnRep_AttackDamage(const FGameplayAttributeData& LastValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, AttackDamage, LastValue)
+}
+
+void UPushAttributeSet::OnRep_SpellPower(const FGameplayAttributeData& LastValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, SpellPower, LastValue)
+}
+
+void UPushAttributeSet::OnRep_Armor(const FGameplayAttributeData& LastValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, Armor, LastValue)
+}
+
+void UPushAttributeSet::OnRep_SpellResist(const FGameplayAttributeData& LastValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, SpellResist, LastValue)
+}
+
+void UPushAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& LastValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushAttributeSet, MoveSpeed, LastValue)
 }
