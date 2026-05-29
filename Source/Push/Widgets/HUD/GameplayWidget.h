@@ -7,6 +7,7 @@
 #include "Push/PushGameplayAbilityTypes.h"
 #include "GameplayWidget.generated.h"
 
+class UStatsGauge;
 class UAbilityListView;
 class UAbilitySystemComponent;
 class UValueGauge;

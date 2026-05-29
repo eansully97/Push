@@ -8,16 +8,17 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
-#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Push/Push.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
+#include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 
 APushPlayerCharacter::APushPlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	HeroAttributeSet = CreateDefaultSubobject<UPushHeroAttributeSet>("Hero Attribute Set");
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());

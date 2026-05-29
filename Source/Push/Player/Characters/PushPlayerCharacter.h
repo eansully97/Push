@@ -8,6 +8,7 @@
 #include "Push/Character/Base/PushCharacter.h"
 #include "PushPlayerCharacter.generated.h"
 
+class UPushHeroAttributeSet;
 class UInputAction;
 class UInputMappingContext;
 class UCameraComponent;
@@ -77,6 +78,9 @@ private:
 	*/
 private:
 	virtual void OnAimStateChanged(bool bIsAiming) override;
+
+	UPROPERTY()
+	UPushHeroAttributeSet* HeroAttributeSet;
 
 	/*
 	*	Death and Respawn
