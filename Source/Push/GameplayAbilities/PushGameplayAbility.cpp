@@ -92,7 +92,24 @@ TArray<FHitResult> UPushGameplayAbility::GetHitResultFromSweepLocationTargetData
 void UPushGameplayAbility::ApplyGameplayEffectToHitResultActor(const FHitResult& HitResult,
 	TSubclassOf<UGameplayEffect> Effect, int32 Level)
 {
+	AActor* TargetActor = HitResult.GetActor();
+	if (!Effect || !TargetActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s could not apply gameplay effect: Effect=%s Target=%s."),
+			*GetName(),
+			Effect ? *Effect->GetName() : TEXT("None"),
+			TargetActor ? *TargetActor->GetName() : TEXT("None"));
+		return;
+	}
+
 	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(Effect, Level);
+	if (!EffectSpecHandle.IsValid() || !EffectSpecHandle.Data.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s failed to create gameplay effect spec for %s."),
+			*GetName(),
+			*Effect->GetName());
+		return;
+	}
 
 	FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo());
 	EffectContextHandle.AddHitResult(HitResult);
@@ -105,7 +122,7 @@ void UPushGameplayAbility::ApplyGameplayEffectToHitResultActor(const FHitResult&
 			CurrentActorInfo,
 			CurrentActivationInfo,
 			EffectSpecHandle,
-			UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(HitResult.GetActor()));
+			UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(TargetActor));
 
 	if (!AppliedEffectHandles.IsEmpty())
 	{

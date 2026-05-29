@@ -8,6 +8,7 @@
 #include "MinionBarracks.generated.h"
 
 class AMinion;
+class APlayerStart;
 
 UCLASS()
 class PUSH_API AMinionBarracks : public AActor

@@ -9,6 +9,8 @@
 #include "TimerManager.h"
 #include "PushAIController.generated.h"
 
+class UAbilitySystemComponent;
+
 UCLASS()
 class PUSH_API APushAIController : public AAIController
 {
@@ -18,7 +20,11 @@ public:
 	APushAIController();
 
 	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
 	virtual void BeginPlay() override;
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Perception")
@@ -67,11 +73,16 @@ private:
 	void ClearAndDisableAllSenses();
 	void EnableAllSenses();
 	
+	void BindPawnDeathTagEvents(APawn* PawnToBind);
+	void UnbindPawnDeathTagEvents();
 	void PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	TWeakObjectPtr<AActor> TargetTagEventActor;
 	FDelegateHandle TargetDeadTagDelegateHandle;
 	FDelegateHandle TargetStealthTagDelegateHandle;
+
+	TWeakObjectPtr<UAbilitySystemComponent> PawnDeathTagASC;
+	FDelegateHandle PawnDeadTagDelegateHandle;
 
 	TWeakObjectPtr<AActor> RememberedTarget;
 	FTimerHandle RememberedTargetTimerHandle;

@@ -27,6 +27,7 @@ private:
 	UFUNCTION()
 	void TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
 
+	bool HasValidGroundBlastConfig() const;
 	bool TryGetValidatedTargetLocation(const FGameplayAbilityTargetDataHandle& TargetDataHandle, FVector& OutTargetLocation) const;
 	FGameplayAbilityTargetDataHandle BuildServerTargetData(const FVector& TargetLocation) const;
 

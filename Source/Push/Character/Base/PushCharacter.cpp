@@ -312,7 +312,10 @@ void APushCharacter::UpdateOverheadWidgetVisibility()
 	}
 
 	if (IsInStealth())
+	{
+		SetOverheadWidgetVisibility(true);
 		return;
+	}
 	
 	if (APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
 	{
@@ -425,7 +428,8 @@ void APushCharacter::DeathMontageFinished()
 {
 	if (!IsDead())
 		return;
-	
+
+	// Ragdoll is derived from replicated death tags and remains cosmetic per machine.
 	SetRagdollEnabled(true);
 }
 
@@ -604,19 +608,19 @@ TArray<FPushInputActivatedAbilityDisplayData> APushCharacter::GetDisplayInputAct
 bool APushCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
                                                              const FGameplayEventData& EventData)
 {
-	return IsAllowedClientGameplayEvent(EventTag, EventData);
+	return IsWellFormedClientGameplayEvent(EventTag, EventData);
 }
 
 void APushCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayTag& EventTag,
-                                                                   const FGameplayEventData& EventData)
+                                                                    const FGameplayEventData& EventData)
 {
-	if (!IsAllowedClientGameplayEvent(EventTag, EventData))
+	if (!CanProcessClientGameplayEvent(EventTag, EventData) || IsClientGameplayEventThrottled(EventTag))
 		return;
 
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
 }
 
-bool APushCharacter::IsAllowedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
+bool APushCharacter::IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
 {
 	const bool bIsAllowedInputEvent =
 		EventTag == PushGameplayTags::Input_Ability_BasicAttack_Pressed
@@ -626,4 +630,36 @@ bool APushCharacter::IsAllowedClientGameplayEvent(const FGameplayTag& EventTag, 
 		&& EventData.TargetData.Num() == 0
 		&& EventData.Instigator == nullptr
 		&& EventData.Target == nullptr;
+}
+
+bool APushCharacter::CanProcessClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
+{
+	if (!IsWellFormedClientGameplayEvent(EventTag, EventData))
+	{
+		return false;
+	}
+
+	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	return ASC
+		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead)
+		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun);
+}
+
+bool APushCharacter::IsClientGameplayEventThrottled(const FGameplayTag& EventTag)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return true;
+	}
+
+	const double CurrentTime = World->GetTimeSeconds();
+	const double* LastAcceptedTime = LastAcceptedClientGameplayEventTimes.Find(EventTag);
+	if (LastAcceptedTime && CurrentTime - *LastAcceptedTime < ClientGameplayEventThrottleSeconds)
+	{
+		return true;
+	}
+
+	LastAcceptedClientGameplayEventTimes.Add(EventTag, CurrentTime);
+	return false;
 }

@@ -25,6 +25,12 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                       const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                       const FGameplayEventData* TriggerEventData)
 {
+	if (!HasValidGroundBlastConfig())
+	{
+		K2_EndAbility();
+		return;
+	}
+
 	if (!HasAuthorityOrPredictionKey(CurrentActorInfo, &CurrentActivationInfo))
 	{
 		K2_EndAbility();
@@ -43,8 +49,14 @@ void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	WaitTargetDataTask->Cancelled.AddDynamic(this, &ThisClass::TargetCancelled);
 	WaitTargetDataTask->ReadyForActivation();
 
-	AGameplayAbilityTargetActor* TargetActor;
-	WaitTargetDataTask->BeginSpawningActor(this, TargetActorClass, TargetActor);
+	AGameplayAbilityTargetActor* TargetActor = nullptr;
+	if (!WaitTargetDataTask->BeginSpawningActor(this, TargetActorClass, TargetActor) || !TargetActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: failed to spawn target actor %s."),
+			TargetActorClass ? *TargetActorClass->GetName() : TEXT("None"));
+		K2_EndAbility();
+		return;
+	}
 
 	if (ATargetActor_GroundPick* GroundPickActor = Cast<ATargetActor_GroundPick>(TargetActor))
 	{
@@ -81,15 +93,21 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 		CueParams.Location = TargetLocation;
 		CueParams.RawMagnitude = TargetAreaRadius;
 
-		GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(GameplayCueTag, CueParams);
-		GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+			ASC->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
+		}
 
 		K2_CommitAbilityCooldown();
 	}
 
-	if (UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance())
+	if (CastAbilityMontage)
 	{
-		OwnerAnimInstance->Montage_Play(CastAbilityMontage);
+		if (UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance())
+		{
+			OwnerAnimInstance->Montage_Play(CastAbilityMontage);
+		}
 	}
 
 	K2_EndAbility();
@@ -98,6 +116,49 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 void UGA_GroundBlast::TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle)
 {
 	K2_EndAbility();
+}
+
+bool UGA_GroundBlast::HasValidGroundBlastConfig() const
+{
+	bool bIsValid = true;
+
+	if (!TargetingAbilityMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: TargetingAbilityMontage is not set."));
+		bIsValid = false;
+	}
+
+	if (!TargetActorClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: TargetActorClass is not set."));
+		bIsValid = false;
+	}
+
+	if (!DamageEffectDef.DamageEffectClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: DamageEffectClass is not set."));
+		bIsValid = false;
+	}
+
+	if (TargetAreaRadius <= 0.f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: TargetAreaRadius must be greater than zero."));
+		bIsValid = false;
+	}
+
+	if (TargetTraceRange <= 0.f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: TargetTraceRange must be greater than zero."));
+		bIsValid = false;
+	}
+
+	if (!GameplayCueTag.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GroundBlast: GameplayCueTag is not set."));
+		bIsValid = false;
+	}
+
+	return bIsValid;
 }
 
 bool UGA_GroundBlast::TryGetValidatedTargetLocation(
@@ -126,13 +187,19 @@ bool UGA_GroundBlast::TryGetValidatedTargetLocation(
 
 FGameplayAbilityTargetDataHandle UGA_GroundBlast::BuildServerTargetData(const FVector& TargetLocation) const
 {
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return {};
+	}
+
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 	const AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(GroundBlastTargetOverlap), false, AvatarActor);
-	GetWorld()->OverlapMultiByObjectType(
+	World->OverlapMultiByObjectType(
 		OverlapResults,
 		TargetLocation,
 		FQuat::Identity,

@@ -28,7 +28,10 @@
 		},
 		{
 			"Name": "CascadeToNiagaraConverter",
-			"Enabled": true
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
 		}
 	]
 }

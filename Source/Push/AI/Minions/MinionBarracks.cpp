@@ -18,6 +18,12 @@ void AMinionBarracks::BeginPlay()
 
 void AMinionBarracks::SpawnNewMinions(int32 AmountToSpawn)
 {
+	if (!MinionClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s cannot spawn minions: MinionClass is not set."), *GetName());
+		return;
+	}
+
 	for (int32 i = 0; i < AmountToSpawn; i++)
 	{
 		FTransform SpawnTransform = GetActorTransform();
@@ -27,6 +33,14 @@ void AMinionBarracks::SpawnNewMinions(int32 AmountToSpawn)
 		}
 		
 		AMinion* NewMinion = GetWorld()->SpawnActorDeferred<AMinion>(MinionClass, SpawnTransform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+		if (!NewMinion)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s failed to spawn minion class %s."),
+				*GetName(),
+				*MinionClass->GetName());
+			continue;
+		}
+
 		NewMinion->SetGenericTeamId(BarracksTeamID);
 		NewMinion->FinishSpawning(SpawnTransform);
 		NewMinion->SetGoal(Goal);
@@ -77,7 +91,7 @@ AMinion* AMinionBarracks::GetNextAvailableMinion() const
 {
 	for (AMinion* Minion : MinionPool)
 	{
-		if (!Minion->IsActive())
+		if (Minion && !Minion->IsActive())
 		{
 			return Minion;
 		}

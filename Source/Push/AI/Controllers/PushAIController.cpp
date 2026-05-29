@@ -34,6 +34,7 @@ APushAIController::APushAIController()
 void APushAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	UnbindPawnDeathTagEvents();
 
 	if (IGenericTeamAgentInterface* PawnTeamInterface = Cast<IGenericTeamAgentInterface>(InPawn))
 	{
@@ -42,11 +43,17 @@ void APushAIController::OnPossess(APawn* InPawn)
 		EnableAllSenses();
 	}
 
-	UAbilitySystemComponent* PawnASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetPawn());
-	if (PawnASC)
-	{
-		PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).AddUObject(this, &ThisClass::PawnDeadTagUpdated);
-	}
+	BindPawnDeathTagEvents(InPawn);
+}
+
+void APushAIController::OnUnPossess()
+{
+	UnbindPawnDeathTagEvents();
+	ClearRememberedTarget();
+	UnbindTargetTagEvents();
+	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
+
+	Super::OnUnPossess();
 }
 
 void APushAIController::BeginPlay()
@@ -56,6 +63,16 @@ void APushAIController::BeginPlay()
 	if (!BehaviorTree)
 		return;
 	RunBehaviorTree(BehaviorTree);
+}
+
+void APushAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindPawnDeathTagEvents();
+	ClearRememberedTarget();
+	UnbindTargetTagEvents();
+	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void APushAIController::TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus)
@@ -388,17 +405,50 @@ void APushAIController::EnableAllSenses()
 	}
 }
 
+void APushAIController::BindPawnDeathTagEvents(APawn* PawnToBind)
+{
+	UAbilitySystemComponent* PawnASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(PawnToBind);
+	if (!PawnASC)
+	{
+		return;
+	}
+
+	PawnDeathTagASC = PawnASC;
+	PawnDeadTagDelegateHandle = PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead)
+		.AddUObject(this, &ThisClass::PawnDeadTagUpdated);
+}
+
+void APushAIController::UnbindPawnDeathTagEvents()
+{
+	if (UAbilitySystemComponent* PawnASC = PawnDeathTagASC.Get())
+	{
+		if (PawnDeadTagDelegateHandle.IsValid())
+		{
+			PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).Remove(PawnDeadTagDelegateHandle);
+		}
+	}
+
+	PawnDeathTagASC.Reset();
+	PawnDeadTagDelegateHandle.Reset();
+}
+
 void APushAIController::PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	if (Count != 0)
 	{
-		GetBrainComponent()->StopLogic("Dead");
+		if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
+		{
+			ActiveBrainComponent->StopLogic("Dead");
+		}
 		ClearAndDisableAllSenses();
 		bIsPawnDead = true;
 	}
 	else
 	{
-		GetBrainComponent()->StartLogic();
+		if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
+		{
+			ActiveBrainComponent->StartLogic();
+		}
 		EnableAllSenses();
 		bIsPawnDead = false;
 	}

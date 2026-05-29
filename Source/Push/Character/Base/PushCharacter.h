@@ -53,7 +53,9 @@ private:
 	UPushAttributeSet* ResolveAttributeSet() const;
 	void BindChangeDelegates();
 	void ClearChangeDelegates();
-	bool IsAllowedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
+	bool IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
+	bool CanProcessClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
+	bool IsClientGameplayEventThrottled(const FGameplayTag& EventTag);
 	void DeathTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StunTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
@@ -80,6 +82,11 @@ private:
 	FDelegateHandle StunTagDelegateHandle;
 	FDelegateHandle StealthTagDelegateHandle;
 	FDelegateHandle AimingTagDelegateHandle;
+
+	TMap<FGameplayTag, double> LastAcceptedClientGameplayEventTimes;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability", meta = (ClampMin = "0.0"))
+	float ClientGameplayEventThrottleSeconds = 0.05f;
 
 	/*
 	*	OverheadWidget
