@@ -13,6 +13,7 @@ namespace PushGameplayTags
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Infiltrate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Siphon);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Countess_Execute);
 
 	// Cooldown
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown);
@@ -20,6 +21,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Crunch_GroundBlast);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Infiltrate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Siphon);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Execute);
 
 	// Input
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_BasicAttack_Pressed);

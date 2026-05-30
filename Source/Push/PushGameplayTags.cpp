@@ -11,6 +11,7 @@ namespace PushGameplayTags
 
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Countess_Infiltrate, "Ability.Countess.Infiltrate");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Countess_Siphon, "Ability.Countess.Siphon");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Countess_Execute, "Ability.Countess.Execute");
 
 	// Cooldown
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown, "Cooldown");
@@ -18,6 +19,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Crunch_GroundBlast, "Cooldown.Ability.Crunch.GroundBlast");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Infiltrate, "Cooldown.Ability.Countess.Infiltrate");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Siphon, "Cooldown.Ability.Countess.Siphon");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Execute, "Cooldown.Ability.Countess.Execute");
 
 	// Input
 	UE_DEFINE_GAMEPLAY_TAG(Input_Ability_BasicAttack_Pressed, "Input.Ability.BasicAttack.Pressed");

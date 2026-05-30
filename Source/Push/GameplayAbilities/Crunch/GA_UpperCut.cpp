@@ -59,7 +59,7 @@ void UGA_UpperCut::ActivateAbility(
 		WaitComboChangeEvent->ReadyForActivation();
 
 		UAbilityTask_WaitGameplayEvent* WaitComboCommitEvent =
-			UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, PushGameplayTags::Input_Ability_BasicAttack_Pressed);
+			UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, PushGameplayTags::Input_Ability_SecondaryAttack_Pressed);
 
 		WaitComboCommitEvent->EventReceived.AddDynamic(this, &ThisClass::HandleComboCommitEvent);
 		WaitComboCommitEvent->ReadyForActivation();

@@ -14,6 +14,7 @@ EBTNodeResult::Type UBTTask_SendInputToASC::ExecuteTask(UBehaviorTreeComponent& 
 		if (UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerAIC->GetPawn()))
 		{
 			OwnerASC->PressInputID(static_cast<int32>(InputID));
+			OwnerASC->ReleaseInputID(static_cast<int32>(InputID));
 			return EBTNodeResult::Succeeded;
 		}
 	}
