@@ -35,6 +35,7 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool UsesPlayerStateAbilitySystem() const;
+	virtual bool ShouldApplyInitialEffects() const;
 	
 	/*
 	 *	GAS
@@ -46,9 +47,13 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
-	
+	void MoveSpeedUpdated(const FOnAttributeChangeData& Data);
 	 
 private:
+	void ApplyMoveSpeed(float NewMoveSpeed);
+	void SyncMoveSpeedFromAttribute();
+
+	FDelegateHandle MoveSpeedChangedDelegateHandle;
 	void InitializeAbilitySystem();
 	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
 	UPushAttributeSet* ResolveAttributeSet() const;

@@ -15,8 +15,8 @@ class PUSH_API UPushAbilitySystemComponent : public UAbilitySystemComponent
 public:
 	UPushAbilitySystemComponent();
 
-	void InitializeBaseAttributes();
-	void ServerSideInit();
+	bool InitializeBaseAttributes();
+	void ServerSideInit(bool bApplyInitialEffects = false);
 	void ApplyFullStatEffect();
 	void AuthBreakStealth();
 	void RemoveTransientEffectsForDeath();
@@ -31,8 +31,10 @@ public:
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
 
 private:
-	void ApplyStartupEffects();
+	void ApplyStartupEffects(bool bBaseAttributesInitialized, bool bApplyInitialEffects);
 	void GiveInitialAbilities();
+	bool HasInitialEffects() const;
+	bool ApplyInitialEffects();
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level = 1);
 	bool ShouldAbilityActivationBreakStealth(const FGameplayAbilitySpecHandle Handle, const UGameplayAbility* Ability) const;
@@ -40,6 +42,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
 	TArray<FPushGameplayEffect> GameplayEffects;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
+	TArray<TSubclassOf<UGameplayEffect>> InitialEffects;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities")
 	TMap<EAbilityInputID, FPushInputActivatedAbility> InputActivatedAbilities;

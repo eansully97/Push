@@ -17,6 +17,11 @@ bool AMinion::IsActive() const
 	return !IsDead();
 }
 
+bool AMinion::ShouldApplyInitialEffects() const
+{
+	return true;
+}
+
 void AMinion::Activate()
 {
 	RespawnImmediately();

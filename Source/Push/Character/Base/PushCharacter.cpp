@@ -92,11 +92,43 @@ bool APushCharacter::UsesPlayerStateAbilitySystem() const
 	return false;
 }
 
+bool APushCharacter::ShouldApplyInitialEffects() const
+{
+	return false;
+}
+
 void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, TeamID)
+}
+
+void APushCharacter::MoveSpeedUpdated(const FOnAttributeChangeData& Data)
+{
+	ApplyMoveSpeed(Data.NewValue);
+}
+
+void APushCharacter::ApplyMoveSpeed(float NewMoveSpeed)
+{
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->MaxWalkSpeed = NewMoveSpeed;
+	}
+}
+
+void APushCharacter::SyncMoveSpeedFromAttribute()
+{
+	if (!ActiveAbilitySystemComponent)
+		return;
+
+	const float CurrentMoveSpeed =
+		ActiveAbilitySystemComponent->GetNumericAttribute(UPushAttributeSet::GetMoveSpeedAttribute());
+
+	if (CurrentMoveSpeed > 0.f)
+	{
+		ApplyMoveSpeed(CurrentMoveSpeed);
+	}
 }
 
 void APushCharacter::InitializeAbilitySystem()
@@ -116,12 +148,13 @@ void APushCharacter::InitializeAbilitySystem()
 	RegisterAttributeSetSubobjects(ActiveAbilitySystemComponent->GetOwner());
 	RegisterAttributeSetSubobjects(this);
 	ActiveAbilitySystemComponent->InitAbilityActorInfo(ActiveAbilitySystemComponent->GetOwner(), this);
-	BindChangeDelegates();
 
 	if (HasAuthority())
 	{
-		ActiveAbilitySystemComponent->ServerSideInit();
+		ActiveAbilitySystemComponent->ServerSideInit(ShouldApplyInitialEffects());
 	}
+
+	BindChangeDelegates();
 
 	if (HasActorBegunPlay())
 	{
@@ -186,6 +219,13 @@ void APushCharacter::BindChangeDelegates()
 		AimingTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming)
 			.AddUObject(this, &ThisClass::AimingTagUpdated);
 
+		MoveSpeedChangedDelegateHandle =
+			ActiveAbilitySystemComponent
+				->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMoveSpeedAttribute())
+				.AddUObject(this, &ThisClass::MoveSpeedUpdated);
+
+		SyncMoveSpeedFromAttribute();
+		
 		BoundAbilitySystemComponent = ActiveAbilitySystemComponent;
 	}
 }
@@ -199,6 +239,10 @@ void APushCharacter::ClearChangeDelegates()
 	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).Remove(StunTagDelegateHandle);
 	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Stealth).Remove(StealthTagDelegateHandle);
 	BoundAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).Remove(AimingTagDelegateHandle);
+
+	BoundAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMoveSpeedAttribute())
+		.Remove(MoveSpeedChangedDelegateHandle);
 
 	BoundAbilitySystemComponent = nullptr;
 }

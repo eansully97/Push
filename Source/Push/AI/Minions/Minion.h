@@ -19,6 +19,7 @@ public:
 	void SetGoal(AActor* NewGoal) const;
 
 protected:
+	virtual bool ShouldApplyInitialEffects() const override;
 	
 private:
 	void PickMeshForTeamID();
