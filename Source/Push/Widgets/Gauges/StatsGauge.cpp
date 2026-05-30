@@ -11,7 +11,10 @@
 void UStatsGauge::NativePreConstruct()
 {
 	Super::NativePreConstruct();
-	Icon->SetBrushFromTexture(IconTexture);
+	if (Icon)
+	{
+		Icon->SetBrushFromTexture(IconTexture);
+	}
 }
 
 void UStatsGauge::NativeConstruct()
@@ -24,21 +27,47 @@ void UStatsGauge::NativeConstruct()
 	{
 		if (UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerPlayerPawn))
 		{
-			bool bFound;
-			float AttributeValue = OwnerASC->GetGameplayAttributeValue(Attribute, bFound);
-			SetValue(AttributeValue);
+			bool bFound = false;
+			const float AttributeValue = OwnerASC->GetGameplayAttributeValue(Attribute, bFound);
+			if (bFound)
+			{
+				SetValue(AttributeValue);
+			}
 
-			OwnerASC->GetGameplayAttributeValueChangeDelegate(Attribute).AddUObject(this, &ThisClass::AttributeChanged);
+			ClearAttributeBinding();
+			BoundAbilitySystemComponent = OwnerASC;
+			AttributeChangedDelegateHandle =
+				OwnerASC->GetGameplayAttributeValueChangeDelegate(Attribute).AddUObject(this, &ThisClass::AttributeChanged);
 		}
 	}
 }
 
+void UStatsGauge::NativeDestruct()
+{
+	ClearAttributeBinding();
+	Super::NativeDestruct();
+}
+
 void UStatsGauge::SetValue(float NewValue)
 {
-	AttributeText->SetText(FText::AsNumber(NewValue, &FormattingOptions));
+	if (AttributeText)
+	{
+		AttributeText->SetText(FText::AsNumber(NewValue, &FormattingOptions));
+	}
 }
 
 void UStatsGauge::AttributeChanged(const FOnAttributeChangeData& ChangeData)
 {
 	SetValue(ChangeData.NewValue);
+}
+
+void UStatsGauge::ClearAttributeBinding()
+{
+	if (BoundAbilitySystemComponent && AttributeChangedDelegateHandle.IsValid() && Attribute.IsValid())
+	{
+		BoundAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Attribute).Remove(AttributeChangedDelegateHandle);
+	}
+
+	BoundAbilitySystemComponent = nullptr;
+	AttributeChangedDelegateHandle.Reset();
 }

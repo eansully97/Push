@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/OverlapResult.h"
 #include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "GA_Siphon.generated.h"
 
@@ -77,4 +78,7 @@ private:
 	bool bMovementDisabledByAbility = false;
 	uint8 PreviousMovementMode = 0;
 	uint8 PreviousCustomMovementMode = 0;
+
+	TArray<FOverlapResult> DamageOverlapResults;
+	TSet<AActor*> DamagedActors;
 };

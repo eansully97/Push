@@ -27,6 +27,12 @@ void UValueGauge::NativePreConstruct()
 	}
 }
 
+void UValueGauge::NativeDestruct()
+{
+	ClearAttributeBindings();
+	Super::NativeDestruct();
+}
+
 void UValueGauge::SetBarColor(const FLinearColor& NewColor)
 {
 	BarColor = NewColor;
@@ -40,19 +46,27 @@ void UValueGauge::SetBarColor(const FLinearColor& NewColor)
 void UValueGauge::SetAndBoundToGameplayAttribute(UAbilitySystemComponent* AbilitySystemComponent,
 	const FGameplayAttribute& Attribute, const FGameplayAttribute& MaxAttribute)
 {
+	ClearAttributeBindings();
+
 	if (AbilitySystemComponent)
 	{
-		bool bFound;
-		float Value = AbilitySystemComponent->GetGameplayAttributeValue(Attribute, bFound);
-		float MaxValue = AbilitySystemComponent->GetGameplayAttributeValue(MaxAttribute, bFound);
+		bool bFoundValue = false;
+		bool bFoundMaxValue = false;
+		const float Value = AbilitySystemComponent->GetGameplayAttributeValue(Attribute, bFoundValue);
+		const float MaxValue = AbilitySystemComponent->GetGameplayAttributeValue(MaxAttribute, bFoundMaxValue);
 
-		if (bFound)
+		if (bFoundValue && bFoundMaxValue)
 		{
 			SetValue(Value, MaxValue);
 		}
 
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Attribute).AddUObject(this, &ThisClass::ValueChanged);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(MaxAttribute).AddUObject(this, &ThisClass::MaxValueChanged);
+		BoundAbilitySystemComponent = AbilitySystemComponent;
+		BoundAttribute = Attribute;
+		BoundMaxAttribute = MaxAttribute;
+		ValueChangedDelegateHandle =
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Attribute).AddUObject(this, &ThisClass::ValueChanged);
+		MaxValueChangedDelegateHandle =
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(MaxAttribute).AddUObject(this, &ThisClass::MaxValueChanged);
 	}
 }
 
@@ -67,11 +81,39 @@ void UValueGauge::SetValue(const float NewValue, const float NewMaxValue)
 	}
 
 	const float NewPercentage = NewValue / NewMaxValue;
-	ProgressBar->SetPercent(NewPercentage);
+	if (ProgressBar)
+	{
+		ProgressBar->SetPercent(NewPercentage);
+	}
 
 	const FNumberFormattingOptions FormattingOptions = FNumberFormattingOptions().SetMaximumFractionalDigits(0);
 
-	ValueText->SetText(FText::Format(FTextFormat::FromString("{0}/{1}"), FText::AsNumber(NewValue, &FormattingOptions), FText::AsNumber(NewMaxValue, &FormattingOptions)));
+	if (ValueText)
+	{
+		ValueText->SetText(FText::Format(FTextFormat::FromString("{0}/{1}"), FText::AsNumber(NewValue, &FormattingOptions), FText::AsNumber(NewMaxValue, &FormattingOptions)));
+	}
+}
+
+void UValueGauge::ClearAttributeBindings()
+{
+	if (BoundAbilitySystemComponent)
+	{
+		if (ValueChangedDelegateHandle.IsValid() && BoundAttribute.IsValid())
+		{
+			BoundAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(BoundAttribute).Remove(ValueChangedDelegateHandle);
+		}
+
+		if (MaxValueChangedDelegateHandle.IsValid() && BoundMaxAttribute.IsValid())
+		{
+			BoundAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(BoundMaxAttribute).Remove(MaxValueChangedDelegateHandle);
+		}
+	}
+
+	BoundAbilitySystemComponent = nullptr;
+	BoundAttribute = FGameplayAttribute();
+	BoundMaxAttribute = FGameplayAttribute();
+	ValueChangedDelegateHandle.Reset();
+	MaxValueChangedDelegateHandle.Reset();
 }
 
 void UValueGauge::ValueChanged(const FOnAttributeChangeData& ChangedData)

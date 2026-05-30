@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/OverlapResult.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Push/GameplayAbilities/PushGameplayAbility.h"
 #include "GA_CountessExecute.generated.h"
@@ -71,7 +72,7 @@ private:
 	float BehindDistance = 150.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Teleport", meta = (Units = "cm"))
-	float TeleportVerticalOffset = 100.f;
+	float TeleportVerticalOffset = 88.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Cosmetics")
 	UMaterialInterface* ExecutableOverlayMaterial;
@@ -128,4 +129,7 @@ private:
 	bool bAvatarMovementLocked = false;
 	bool bTargetMovementLocked = false;
 	bool bExecuting = false;
+
+	mutable TArray<FOverlapResult> TargetScanOverlapResults;
+	TSet<UMeshComponent*> DesiredOverlayMeshes;
 };

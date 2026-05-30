@@ -22,7 +22,7 @@
 
 APushCharacter::APushCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
@@ -65,6 +65,15 @@ void APushCharacter::BeginPlay()
 	
 	RelativeMeshTransform = GetMesh()->GetRelativeTransform();
 	PerceptionStimuliSourceComponent->RegisterForSense(UAISense_Sight::StaticClass());
+}
+
+void APushCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClearChangeDelegates();
+	GetWorldTimerManager().ClearTimer(OverheadWidgetVisibilityUpdateTimerHandle);
+	GetWorldTimerManager().ClearTimer(DeathMontageTimerHandle);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void APushCharacter::PossessedBy(AController* NewController)

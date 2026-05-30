@@ -14,18 +14,30 @@ void UPushAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
+	ClearOwnerAimingTagBinding();
 	OwnerCharacter = Cast<ACharacter>(TryGetPawnOwner());
+	MovementComponent = nullptr;
+	bIsAiming = false;
 
 	if (OwnerCharacter)
 	{
 		MovementComponent = OwnerCharacter->GetCharacterMovement();
 	}
 
-	UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TryGetPawnOwner());
-	if (OwnerASC)
+	OwnerAbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TryGetPawnOwner());
+	if (OwnerAbilitySystemComponent)
 	{
-		OwnerASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming).AddUObject(this, &ThisClass::OwnerAimingTagUpdated);
+		bIsAiming = OwnerAbilitySystemComponent->HasMatchingGameplayTag(PushGameplayTags::Status_Aiming);
+		OwnerAimingTagDelegateHandle = OwnerAbilitySystemComponent
+			->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming)
+			.AddUObject(this, &ThisClass::OwnerAimingTagUpdated);
 	}
+}
+
+void UPushAnimInstance::NativeUninitializeAnimation()
+{
+	ClearOwnerAimingTagBinding();
+	Super::NativeUninitializeAnimation();
 }
 
 void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
@@ -41,7 +53,7 @@ void UPushAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		FRotator BodyRotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(BodyRotation, PreviousBodyRotation);
 		
 		PreviousBodyRotation = BodyRotation;
-		YawSpeed = BodyRotationDelta.Yaw / DeltaTime;
+		YawSpeed = DeltaTime > UE_SMALL_NUMBER ? BodyRotationDelta.Yaw / DeltaTime : 0.f;
 		SmoothedYawSpeed = UKismetMathLibrary::FInterpTo(SmoothedYawSpeed, YawSpeed, DeltaTime, YawSpeedSmoothLerpSpeed);
 
 		FRotator ControlRotation = OwnerCharacter->GetBaseAimRotation();
@@ -65,4 +77,17 @@ void UPushAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 void UPushAnimInstance::OwnerAimingTagUpdated(const FGameplayTag Tag, int32 Count)
 {
 	bIsAiming = Count != 0;
+}
+
+void UPushAnimInstance::ClearOwnerAimingTagBinding()
+{
+	if (OwnerAbilitySystemComponent && OwnerAimingTagDelegateHandle.IsValid())
+	{
+		OwnerAbilitySystemComponent
+			->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming)
+			.Remove(OwnerAimingTagDelegateHandle);
+	}
+
+	OwnerAbilitySystemComponent = nullptr;
+	OwnerAimingTagDelegateHandle.Reset();
 }

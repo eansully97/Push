@@ -256,15 +256,15 @@ void UGA_Siphon::PerformDamageTick()
 	}
 
 	const FVector Origin = AvatarActor->GetActorLocation();
-	TArray<FOverlapResult> OverlapResults;
 
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(SiphonDamageOverlap), false, AvatarActor);
 
+	DamageOverlapResults.Reset();
 	World->OverlapMultiByObjectType(
-		OverlapResults,
+		DamageOverlapResults,
 		Origin,
 		FQuat::Identity,
 		ObjectQueryParams,
@@ -277,9 +277,9 @@ void UGA_Siphon::PerformDamageTick()
 	}
 
 	float TotalHealAmount = 0.f;
-	TSet<AActor*> DamagedActors;
+	DamagedActors.Reset();
 
-	for (const FOverlapResult& OverlapResult : OverlapResults)
+	for (const FOverlapResult& OverlapResult : DamageOverlapResults)
 	{
 		AActor* TargetActor = OverlapResult.GetActor();
 		if (DamagedActors.Contains(TargetActor) || !IsValidSiphonTarget(TargetActor))

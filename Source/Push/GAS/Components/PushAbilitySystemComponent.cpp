@@ -356,6 +356,14 @@ void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayE
 		return;
 	
 	FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingSpec(GameplayEffect, Level, MakeEffectContext());
+	if (!EffectSpecHandle.IsValid() || !EffectSpecHandle.Data.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s failed to create gameplay effect spec for %s."),
+			*GetPathName(),
+			*GetNameSafe(GameplayEffect.Get()));
+		return;
+	}
+
 	ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
 }
 

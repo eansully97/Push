@@ -16,8 +16,6 @@
 
 APushPlayerCharacter::APushPlayerCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
-
 	HeroAttributeSet = CreateDefaultSubobject<UPushHeroAttributeSet>("Hero Attribute Set");
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
@@ -36,11 +34,6 @@ APushPlayerCharacter::APushPlayerCharacter()
 void APushPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-void APushPlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void APushPlayerCharacter::PawnClientRestart()

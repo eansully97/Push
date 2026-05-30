@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "GameplayTagContainer.h"
 #include "PushAnimInstance.generated.h"
 
-struct FGameplayTag;
+class UAbilitySystemComponent;
 class UCharacterMovementComponent;
 
 /**
@@ -18,18 +19,25 @@ class UPushAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 public:
 	virtual void NativeInitializeAnimation() override;
+	virtual void NativeUninitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 	
 
 private:
 	void OwnerAimingTagUpdated(const FGameplayTag Tag, int32 Count);
+	void ClearOwnerAimingTagBinding();
 	
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
 
 	UPROPERTY()
 	UCharacterMovementComponent* MovementComponent;
+
+	UPROPERTY()
+	UAbilitySystemComponent* OwnerAbilitySystemComponent;
+
+	FDelegateHandle OwnerAimingTagDelegateHandle;
 
 	UPROPERTY()
 	float CharacterSpeed;

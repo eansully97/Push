@@ -10,6 +10,7 @@
 
 class UTextBlock;
 class UImage;
+class UAbilitySystemComponent;
 /**
  * 
  */
@@ -21,6 +22,7 @@ class PUSH_API UStatsGauge : public UUserWidget
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 private:
 	UPROPERTY(meta = (BindWidget))
@@ -37,5 +39,10 @@ private:
 
 	void SetValue(float NewValue);
 	void AttributeChanged(const FOnAttributeChangeData& ChangeData);
+	void ClearAttributeBinding();
 	FNumberFormattingOptions FormattingOptions;
+	FDelegateHandle AttributeChangedDelegateHandle;
+
+	UPROPERTY()
+	UAbilitySystemComponent* BoundAbilitySystemComponent = nullptr;
 };

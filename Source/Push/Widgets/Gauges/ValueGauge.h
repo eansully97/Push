@@ -22,6 +22,7 @@ class PUSH_API UValueGauge : public UUserWidget
 	
 public:
 	virtual void NativePreConstruct() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION(BlueprintCallable)
 	void SetBarColor(const FLinearColor& NewColor);
@@ -30,11 +31,19 @@ public:
 	void SetValue(const float NewValue, const float NewMaxValue);
 	
 private:
+	void ClearAttributeBindings();
 	void ValueChanged(const FOnAttributeChangeData& ChangedData);
 	void MaxValueChanged(const FOnAttributeChangeData& ChangedData);
 
-	float CachedValue;
-	float CachedMaxValue;
+	float CachedValue = 0.f;
+	float CachedMaxValue = 0.f;
+	FGameplayAttribute BoundAttribute;
+	FGameplayAttribute BoundMaxAttribute;
+	FDelegateHandle ValueChangedDelegateHandle;
+	FDelegateHandle MaxValueChangedDelegateHandle;
+
+	UPROPERTY()
+	UAbilitySystemComponent* BoundAbilitySystemComponent = nullptr;
 	
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	FLinearColor BarColor;

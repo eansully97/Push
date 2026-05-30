@@ -144,11 +144,12 @@ void UGA_CountessExecute::StartLocalOverlayScan()
 	}
 
 	RefreshExecutableOverlays();
+	World->GetTimerManager().ClearTimer(OverlayScanTimerHandle);
 	World->GetTimerManager().SetTimer(
 		OverlayScanTimerHandle,
 		this,
 		&ThisClass::RefreshExecutableOverlays,
-		ScanInterval,
+		FMath::Max(ScanInterval, 0.05f),
 		true);
 }
 
@@ -178,22 +179,23 @@ void UGA_CountessExecute::RefreshExecutableOverlays()
 
 	RestoreInvalidOverlayEntries();
 
-	TArray<FOverlapResult> OverlapResults;
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(CountessExecuteOverlayScan), false, AvatarActor);
 
+	TargetScanOverlapResults.Reset();
 	World->OverlapMultiByObjectType(
-		OverlapResults,
+		TargetScanOverlapResults,
 		AvatarActor->GetActorLocation(),
 		FQuat::Identity,
 		ObjectQueryParams,
 		FCollisionShape::MakeSphere(TargetScanRange),
 		QueryParams);
 
-	TSet<UMeshComponent*> DesiredOverlayMeshes;
-	for (const FOverlapResult& OverlapResult : OverlapResults)
+	DesiredOverlayMeshes.Reset();
+	DesiredOverlayMeshes.Reserve(TargetScanOverlapResults.Num());
+	for (const FOverlapResult& OverlapResult : TargetScanOverlapResults)
 	{
 		AActor* TargetActor = OverlapResult.GetActor();
 		if (!IsValidExecuteTarget(TargetActor))
@@ -216,6 +218,8 @@ void UGA_CountessExecute::RefreshExecutableOverlays()
 			RestoreExecutableOverlay(Index);
 		}
 	}
+
+	DesiredOverlayMeshes.Reset();
 }
 
 void UGA_CountessExecute::ClearExecutableOverlays()
@@ -300,14 +304,14 @@ bool UGA_CountessExecute::TryFindBestExecuteTarget(AActor*& OutTargetActor) cons
 		return false;
 	}
 
-	TArray<FOverlapResult> OverlapResults;
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(CountessExecuteTargetScan), false, AvatarActor);
 
+	TargetScanOverlapResults.Reset();
 	World->OverlapMultiByObjectType(
-		OverlapResults,
+		TargetScanOverlapResults,
 		AvatarActor->GetActorLocation(),
 		FQuat::Identity,
 		ObjectQueryParams,
@@ -318,7 +322,7 @@ bool UGA_CountessExecute::TryFindBestExecuteTarget(AActor*& OutTargetActor) cons
 	float BestAimDot = MinAimDot;
 	float BestDistanceSq = TNumericLimits<float>::Max();
 
-	for (const FOverlapResult& OverlapResult : OverlapResults)
+	for (const FOverlapResult& OverlapResult : TargetScanOverlapResults)
 	{
 		AActor* TargetActor = OverlapResult.GetActor();
 		if (!IsValidExecuteTarget(TargetActor))
@@ -488,15 +492,21 @@ bool UGA_CountessExecute::TryTeleportBehindTarget(AActor* TargetActor) const
 	}
 
 	const FVector RightDirection = FVector::CrossProduct(FVector::UpVector, BehindDirection).GetSafeNormal();
-	TArray<FVector> SideDirections{RightDirection, -RightDirection, -BehindDirection};
-	const int32 SideDirectionIndex = FMath::RandRange(0, SideDirections.Num() - 1);
-	SideDirections.Swap(0, SideDirectionIndex);
-
-	TArray<FVector> TeleportDirections{BehindDirection};
-	TeleportDirections.Append(SideDirections);
+	const FVector TeleportDirections[] =
+	{
+		BehindDirection,
+		RightDirection,
+		-RightDirection,
+		-BehindDirection
+	};
 
 	for (const FVector& TeleportDirection : TeleportDirections)
 	{
+		if (TeleportDirection.IsNearlyZero())
+		{
+			continue;
+		}
+
 		const FVector TeleportLocation =
 			TargetAnchorLocation + TeleportDirection * BehindDistance + FVector::UpVector * TeleportVerticalOffset;
 		const FRotator CandidateRotation = (TargetAnchorLocation - TeleportLocation).Rotation();
