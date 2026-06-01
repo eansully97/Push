@@ -52,6 +52,7 @@ void APushAIController::OnUnPossess()
 	ClearRememberedTarget();
 	UnbindTargetTagEvents();
 	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
+	bIsPawnDead = false;
 
 	Super::OnUnPossess();
 }
@@ -71,6 +72,7 @@ void APushAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	ClearRememberedTarget();
 	UnbindTargetTagEvents();
 	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
+	bIsPawnDead = false;
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -107,6 +109,10 @@ void APushAIController::TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus
 		if (IsStealthedTarget(TargetActor))
 		{
 			HideTargetForStealth(TargetActor);
+		}
+		else if (bWasCurrentTarget)
+		{
+			SetCurrentTarget(GetNextPerceivedActor());
 		}
 	}
 }
@@ -416,6 +422,8 @@ void APushAIController::BindPawnDeathTagEvents(APawn* PawnToBind)
 	PawnDeathTagASC = PawnASC;
 	PawnDeadTagDelegateHandle = PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead)
 		.AddUObject(this, &ThisClass::PawnDeadTagUpdated);
+
+	RefreshPawnDeathState();
 }
 
 void APushAIController::UnbindPawnDeathTagEvents()
@@ -430,6 +438,16 @@ void APushAIController::UnbindPawnDeathTagEvents()
 
 	PawnDeathTagASC.Reset();
 	PawnDeadTagDelegateHandle.Reset();
+}
+
+void APushAIController::RefreshPawnDeathState()
+{
+	const UAbilitySystemComponent* PawnASC = PawnDeathTagASC.Get();
+	if (!PawnASC)
+		return;
+
+	const int32 DeadTagCount = PawnASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead) ? 1 : 0;
+	PawnDeadTagUpdated(PushGameplayTags::Status_Dead, DeadTagCount);
 }
 
 void APushAIController::PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count)

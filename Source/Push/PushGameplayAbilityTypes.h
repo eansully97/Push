@@ -89,38 +89,38 @@ struct FHeroBaseStats : public FTableRowBase
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> Class;
+	TSubclassOf<AActor> Class{};
 
 	UPROPERTY(EditAnywhere)
-	float Strength;
+	float Strength{0.f};
 	
 	UPROPERTY(EditAnywhere)
-	float StrengthGrowthRate;
+	float StrengthGrowthRate{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float Intelligence;
+	float Intelligence{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float IntelligenceGrowthRate;
+	float IntelligenceGrowthRate{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseMaxHealth;
+	float BaseMaxHealth{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseMaxMana;
+	float BaseMaxMana{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseAttackDamage;
+	float BaseAttackDamage{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseSpellPower;
+	float BaseSpellPower{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseArmor;
+	float BaseArmor{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseSpellResist;
+	float BaseSpellResist{0.f};
 
 	UPROPERTY(EditAnywhere)
-	float BaseMoveSpeed;
+	float BaseMoveSpeed{0.f};
 };

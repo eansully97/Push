@@ -13,11 +13,19 @@
 ATargetActor_GroundPick::ATargetActor_GroundPick()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>("Root"));
 	
 	DecalComponent = CreateDefaultSubobject<UDecalComponent>("Decal Component");
 	DecalComponent->SetupAttachment(GetRootComponent());
+}
+
+void ATargetActor_GroundPick::StartTargeting(UGameplayAbility* Ability)
+{
+	Super::StartTargeting(Ability);
+
+	SetActorTickEnabled(PrimaryPC && PrimaryPC->IsLocalPlayerController());
 }
 
 void ATargetActor_GroundPick::Tick(float DeltaTime)

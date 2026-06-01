@@ -22,6 +22,16 @@ UGA_Combo::UGA_Combo()
 void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
                                 const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	if (!AbilityMontage || !GetOwnerAnimInstance())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s cannot activate combo: AbilityMontage=%s AnimInstance=%s."),
+			*GetName(),
+			*GetNameSafe(AbilityMontage),
+			*GetNameSafe(GetOwnerAnimInstance()));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
+	}
+
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -52,6 +62,13 @@ void UGA_Combo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 	SetupWaitComboInputPressed();
 }
 
+void UGA_Combo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	NextComboName = NAME_None;
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
 FGameplayTag UGA_Combo::GetComboChangedEventTag()
 {
 	return PushGameplayTags::GameplayEvent_Ability_Combo_Change;
@@ -76,7 +93,7 @@ void UGA_Combo::SetupWaitComboInputPressed()
 
 void UGA_Combo::TryCommitCombo()
 {
-	if (NextComboName == NAME_None)
+	if (NextComboName == NAME_None || !AbilityMontage)
 		return;
 
 	UAnimInstance* OwnerAnimInstance = GetOwnerAnimInstance();

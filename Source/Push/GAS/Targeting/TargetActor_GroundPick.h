@@ -14,6 +14,7 @@ public:
 	ATargetActor_GroundPick();
 
 protected:
+	virtual void StartTargeting(UGameplayAbility* Ability) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void ConfirmTargetingAndContinue() override;
 	

@@ -54,6 +54,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Basic, "GameplayCue.Hit.Countess.Basic");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Finish, "GameplayCue.Hit.Countess.Finish");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Siphon, "GameplayCue.Hit.Countess.Siphon");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Countess_Ultimate, "GameplayCue.Hit.Countess.Ultimate");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Minion, "GameplayCue.Hit.Minion");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Hit_Reaction, "GameplayCue.Hit.Reaction");
 }

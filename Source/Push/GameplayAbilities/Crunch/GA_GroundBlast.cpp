@@ -93,17 +93,17 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 		BP_ApplyGameplayEffectToTarget(ServerTargetData, DamageEffectDef.DamageEffectClass, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 		PushTargets(ServerTargetData, DamageEffectDef.PushVelocity);
 
-		FGameplayCueParameters CueParams;
-		CueParams.Location = TargetLocation;
-		CueParams.RawMagnitude = TargetAreaRadius;
-
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
-		{
-			ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
-			ASC->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
-		}
-
 		K2_CommitAbilityCooldown();
+	}
+
+	FGameplayCueParameters CueParams;
+	CueParams.Location = TargetLocation;
+	CueParams.RawMagnitude = TargetAreaRadius;
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
+		ASC->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
 	}
 
 	if (CastAbilityMontage)

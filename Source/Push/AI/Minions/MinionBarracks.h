@@ -24,6 +24,9 @@ private:
 	void SpawnNewMinions(int32 AmountToSpawn);
 	void SpawnNewGroup();
 	const APlayerStart* GetNextSpawnStart();
+	FTransform GetNextBaseSpawnTransform();
+	bool TryFindClearSpawnTransform(const AMinion* MinionToPlace, FTransform& InOutSpawnTransform) const;
+	bool IsSpawnTransformClear(const AMinion* MinionToPlace, const FTransform& SpawnTransform) const;
 	AMinion* GetNextAvailableMinion() const;
 	
 	
@@ -35,6 +38,15 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Spawn")
 	float SpawnInterval = 5.f;
+
+	UPROPERTY(EditAnywhere, Category = "Spawn", meta = (ClampMin = "0.0"))
+	float SpawnSearchRingSpacing = 150.f;
+
+	UPROPERTY(EditAnywhere, Category = "Spawn", meta = (ClampMin = "0"))
+	int32 SpawnSearchRings = 2;
+
+	UPROPERTY(EditAnywhere, Category = "Spawn", meta = (ClampMin = "1"))
+	int32 SpawnSearchSlotsPerRing = 8;
 
 	UPROPERTY()
 	TArray<AMinion*> MinionPool;

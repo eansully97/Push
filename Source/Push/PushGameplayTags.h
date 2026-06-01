@@ -55,6 +55,7 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Basic);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Finish);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Siphon);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Countess_Ultimate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Minion);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Hit_Reaction);
 }

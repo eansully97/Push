@@ -75,6 +75,7 @@ private:
 	
 	void BindPawnDeathTagEvents(APawn* PawnToBind);
 	void UnbindPawnDeathTagEvents();
+	void RefreshPawnDeathState();
 	void PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	TWeakObjectPtr<AActor> TargetTagEventActor;
