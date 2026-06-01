@@ -86,6 +86,8 @@ void UPushAbilitySystemComponent::ApplyStartupEffects(bool bBaseAttributesInitia
 	if (bBaseAttributesInitialized || bInitialEffectsApplied)
 	{
 		AuthApplyGameplayEffect(GetFullStatEffect());
+		AuthApplyGameplayEffect(GetHealthRegenEffect());
+		AuthApplyGameplayEffect(GetManaRegenEffect());
 	}
 
 	bStartupEffectsApplied = true;
@@ -266,6 +268,16 @@ TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetDeathEffect() const
 TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetFullStatEffect() const
 {
 	return GetGameplayEffect(EPushGameplayEffectID::FullStat);
+}
+
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetHealthRegenEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::HealthRegen);
+}
+
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetManaRegenEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::ManaRegen);
 }
 
 bool UPushAbilitySystemComponent::ValidateConfiguredData() const

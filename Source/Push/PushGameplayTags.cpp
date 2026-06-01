@@ -38,6 +38,10 @@ namespace PushGameplayTags
 
 	// Status
 	UE_DEFINE_GAMEPLAY_TAG(Status_Dead, "Status.Dead");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Health_Full, "Status.Health.Full");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Health_Empty, "Status.Health.Empty");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Mana_Full, "Status.Mana.Full");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Mana_Empty, "Status.Mana.Empty");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Stun, "Status.Stun");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Launched, "Status.Launched");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Stealth, "Status.Stealth");

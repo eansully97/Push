@@ -26,6 +26,8 @@ public:
 	TSubclassOf<UGameplayEffect> GetGameplayEffect(EPushGameplayEffectID GameplayEffectID) const;
 	TSubclassOf<UGameplayEffect> GetDeathEffect() const;
 	TSubclassOf<UGameplayEffect> GetFullStatEffect() const;
+	TSubclassOf<UGameplayEffect> GetHealthRegenEffect() const;
+	TSubclassOf<UGameplayEffect> GetManaRegenEffect() const;
 	bool ValidateConfiguredData() const;
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
