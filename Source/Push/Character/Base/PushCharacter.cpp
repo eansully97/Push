@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
@@ -82,6 +83,21 @@ void APushCharacter::PossessedBy(AController* NewController)
 	if (NewController && !NewController->IsPlayerController())
 	{
 		ServerSideInit();
+	}
+
+	if (HasActorBegunPlay())
+	{
+		ConfigureOverheadWidget();
+	}
+}
+
+void APushCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+
+	if (HasActorBegunPlay())
+	{
+		ConfigureOverheadWidget();
 	}
 }
 
@@ -355,7 +371,8 @@ void APushCharacter::OnAimStateChanged(bool bIsAiming)
 
 bool APushCharacter::IsLocallyControlledByPlayer() const
 {
-	return GetController() && GetController()->IsLocalController();
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	return PlayerController && PlayerController->IsLocalController();
 }
 
 void APushCharacter::ConfigureOverheadWidget()

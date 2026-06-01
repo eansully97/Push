@@ -64,6 +64,7 @@ void UPushAbilitySystemComponent::ServerSideInit(bool bApplyInitialEffects)
 		return;
 
 	BindHealthAttributeDelegate();
+	BindManaAttributeDelegate();
 
 	const bool bShouldApplyInitialEffects = bApplyInitialEffects && HasInitialEffects();
 	ValidateConfiguredDataOnce(bApplyInitialEffects);
@@ -160,6 +161,19 @@ void UPushAbilitySystemComponent::BindHealthAttributeDelegate()
 		GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetHealthAttribute())
 		.AddUObject(this, &ThisClass::HealthUpdated);
 	bHealthAttributeDelegateBound = true;
+}
+
+void UPushAbilitySystemComponent::BindManaAttributeDelegate()
+{
+	if (bManaAttributeDelegateBound)
+	{
+		return;
+	}
+
+	ManaAttributeChangedDelegateHandle =
+		GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetManaAttribute())
+		.AddUObject(this, &ThisClass::ManaUpdated);
+	bManaAttributeDelegateBound = true;
 }
 
 void UPushAbilitySystemComponent::ApplyFullStatEffect()
@@ -460,12 +474,68 @@ void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilityS
 
 void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& ChangeData)
 {
-	if (!GetOwner()) return;
+	if (!GetOwner() || !GetOwner()->HasAuthority()) return;
 
-	if (ChangeData.NewValue <= 0 && GetOwner()->HasAuthority() && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+	bool bFound = false;
+	float MaxHealth = GetGameplayAttributeValue(UPushAttributeSet::GetMaxHealthAttribute(), bFound);
+	if (bFound && ChangeData.NewValue >= MaxHealth)
 	{
-		RemoveTransientEffectsForDeath();
-		AuthApplyGameplayEffect(GetDeathEffect());
+		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Health_Full))
+		{
+			AddLooseGameplayTag(PushGameplayTags::Status_Health_Full);
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(PushGameplayTags::Status_Health_Full);
+	}
+
+	if (ChangeData.NewValue <= 0 && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+	{
+		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Health_Empty))
+		{
+			AddLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
+			if (GetDeathEffect())
+			{
+				RemoveTransientEffectsForDeath();
+				AuthApplyGameplayEffect(GetDeathEffect());
+			}
+		}
+		else
+		{
+			RemoveLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
+		}
+	}
+}
+
+void UPushAbilitySystemComponent::ManaUpdated(const FOnAttributeChangeData& ChangeData)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority()) return;
+
+	bool bFound = false;
+	float MaxMana = GetGameplayAttributeValue(UPushAttributeSet::GetMaxManaAttribute(), bFound);
+	if (bFound && ChangeData.NewValue >= MaxMana)
+	{
+		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Mana_Full))
+		{
+			AddLooseGameplayTag(PushGameplayTags::Status_Mana_Full);
+		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Full);
+	}
+
+	if (ChangeData.NewValue <= 0 && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+	{
+		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Mana_Empty))
+		{
+			AddLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
+		}
+		else
+		{
+			RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
+		}
 	}
 }
 

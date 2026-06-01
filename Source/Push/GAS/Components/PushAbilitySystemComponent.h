@@ -36,6 +36,7 @@ private:
 	void ApplyStartupEffects(bool bBaseAttributesInitialized, bool bApplyInitialEffects);
 	void GiveInitialAbilities();
 	void BindHealthAttributeDelegate();
+	void BindManaAttributeDelegate();
 	bool ValidateConfiguredDataOnce(bool bApplyInitialEffects);
 	bool ValidateStartupConfiguration(bool bApplyInitialEffects) const;
 	bool ValidateBaseStatsConfiguration(bool bBaseAttributesExpected, const AActor* StatsActor) const;
@@ -44,6 +45,7 @@ private:
 	bool HasInitialEffects() const;
 	bool ApplyInitialEffects();
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
+	void ManaUpdated(const FOnAttributeChangeData& ChangeData);
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level = 1);
 	bool ShouldAbilityActivationBreakStealth(const FGameplayAbilitySpecHandle Handle, const UGameplayAbility* Ability) const;
 	bool ShouldPersistActiveEffectThroughDeath(const FActiveGameplayEffect& ActiveEffect) const;
@@ -68,5 +70,7 @@ private:
 	bool bConfiguredDataValidated = false;
 	bool bConfiguredDataValid = false;
 	bool bHealthAttributeDelegateBound = false;
+	bool bManaAttributeDelegateBound = false;
 	FDelegateHandle HealthAttributeChangedDelegateHandle;
+	FDelegateHandle ManaAttributeChangedDelegateHandle;
 };
