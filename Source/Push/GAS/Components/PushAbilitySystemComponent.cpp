@@ -10,7 +10,6 @@
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {
-	GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::HealthUpdated);
 	GenericConfirmInputID = static_cast<int32>(EAbilityInputID::Confirm);
 	GenericCancelInputID = static_cast<int32>(EAbilityInputID::Cancel);
 }
@@ -25,28 +24,16 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 	if (!BaseStatsData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s has no BaseStatsData configured; base attributes were not initialized for %s."),
-			*GetPathName(),
+			*GetValidationContext(),
 			*GetNameSafe(StatsActor));
 		return false;
 	}
 
-	const FHeroBaseStats* BaseStats =  nullptr;
-
-	for (const auto& DataPair : BaseStatsData->GetRowMap())
-	{
-		BaseStats = BaseStatsData->FindRow<FHeroBaseStats>(DataPair.Key, "");
-		if (BaseStats && BaseStats->Class && StatsActor->IsA(BaseStats->Class))
-		{
-			break;
-		}
-
-		BaseStats = nullptr;
-	}
-
+	const FHeroBaseStats* BaseStats = FindBaseStatsForActor(StatsActor);
 	if (!BaseStats)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s could not find a BaseStatsData row for %s (%s)."),
-			*GetPathName(),
+			*GetValidationContext(),
 			*GetNameSafe(StatsActor),
 			*GetNameSafe(StatsActor->GetClass()));
 		return false;
@@ -73,7 +60,14 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 
 void UPushAbilitySystemComponent::ServerSideInit(bool bApplyInitialEffects)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
+	BindHealthAttributeDelegate();
+
 	const bool bShouldApplyInitialEffects = bApplyInitialEffects && HasInitialEffects();
+	ValidateConfiguredDataOnce(bApplyInitialEffects);
+
 	const bool bBaseAttributesInitialized = bShouldApplyInitialEffects ? false : InitializeBaseAttributes();
 
 	ApplyStartupEffects(bBaseAttributesInitialized, bShouldApplyInitialEffects);
@@ -88,7 +82,6 @@ void UPushAbilitySystemComponent::ApplyStartupEffects(bool bBaseAttributesInitia
 	if (bStartupEffectsApplied)
 		return;
 
-	ValidateConfiguredData();
 	const bool bInitialEffectsApplied = bApplyInitialEffects && ApplyInitialEffects();
 	if (bBaseAttributesInitialized || bInitialEffectsApplied)
 	{
@@ -134,8 +127,6 @@ void UPushAbilitySystemComponent::GiveInitialAbilities()
 	if (bInitialAbilitiesGranted)
 		return;
 
-	ValidateConfiguredData();
-	
 	for (const auto& AbilityPair : InputActivatedAbilities)
 	{
 		const FPushInputActivatedAbility& Ability = AbilityPair.Value;
@@ -154,6 +145,19 @@ void UPushAbilitySystemComponent::GiveInitialAbilities()
 	}
 
 	bInitialAbilitiesGranted = true;
+}
+
+void UPushAbilitySystemComponent::BindHealthAttributeDelegate()
+{
+	if (bHealthAttributeDelegateBound)
+	{
+		return;
+	}
+
+	HealthAttributeChangedDelegateHandle =
+		GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetHealthAttribute())
+		.AddUObject(this, &ThisClass::HealthUpdated);
+	bHealthAttributeDelegateBound = true;
 }
 
 void UPushAbilitySystemComponent::ApplyFullStatEffect()
@@ -268,13 +272,15 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 {
 	bool bIsValid = true;
 	TSet<EPushGameplayEffectID> EffectIDs;
+	bool bHasConfiguredAbility = false;
+	const FString ValidationContext = GetValidationContext();
 
 	for (const FPushGameplayEffect& GameplayEffect : GameplayEffects)
 	{
 		if (EffectIDs.Contains(GameplayEffect.EffectID))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s has duplicate GameplayEffect entry for id %d."),
-				*GetPathName(), static_cast<int32>(GameplayEffect.EffectID));
+				*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
 			bIsValid = false;
 		}
 
@@ -283,20 +289,20 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 		if (!GameplayEffect.EffectClass)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s has a null GameplayEffect entry for id %d."),
-				*GetPathName(), static_cast<int32>(GameplayEffect.EffectID));
+				*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
 			bIsValid = false;
 		}
 	}
 
 	if (!GetDeathEffect())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is missing the Death gameplay effect."), *GetPathName());
+		UE_LOG(LogTemp, Warning, TEXT("%s is missing the Death gameplay effect."), *ValidationContext);
 		bIsValid = false;
 	}
 
 	if (!GetFullStatEffect())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *GetPathName());
+		UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *ValidationContext);
 		bIsValid = false;
 	}
 
@@ -305,15 +311,19 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 		if (AbilityPair.Key == EAbilityInputID::None)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s has an input-activated ability assigned to input id None. Move non-input startup abilities to DefaultAbilities, or assign a real input id."),
-				*GetPathName());
+				*ValidationContext);
 			bIsValid = false;
 		}
 
 		if (!AbilityPair.Value.AbilityClass)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s has a null input ability for input id %d."),
-				*GetPathName(), static_cast<int32>(AbilityPair.Key));
+				*ValidationContext, static_cast<int32>(AbilityPair.Key));
 			bIsValid = false;
+		}
+		else
+		{
+			bHasConfiguredAbility = true;
 		}
 	}
 
@@ -321,12 +331,109 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 	{
 		if (!AbilityClass)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%s has a null default ability."), *GetPathName());
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null default ability."), *ValidationContext);
 			bIsValid = false;
+		}
+		else
+		{
+			bHasConfiguredAbility = true;
 		}
 	}
 
+	if (!bHasConfiguredAbility)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s has no configured input or default startup abilities."), *ValidationContext);
+		bIsValid = false;
+	}
+
 	return bIsValid;
+}
+
+bool UPushAbilitySystemComponent::ValidateConfiguredDataOnce(bool bApplyInitialEffects)
+{
+	if (bConfiguredDataValidated)
+	{
+		return bConfiguredDataValid;
+	}
+
+	bConfiguredDataValidated = true;
+	const bool bConfiguredDataValidNow = ValidateConfiguredData();
+	const bool bStartupConfigurationValid = ValidateStartupConfiguration(bApplyInitialEffects);
+	bConfiguredDataValid = bConfiguredDataValidNow && bStartupConfigurationValid;
+	return bConfiguredDataValid;
+}
+
+bool UPushAbilitySystemComponent::ValidateStartupConfiguration(bool bApplyInitialEffects) const
+{
+	const bool bHasValidInitialEffect = bApplyInitialEffects && HasInitialEffects();
+	const bool bBaseAttributesExpected = !bHasValidInitialEffect;
+	const AActor* StatsActor = GetAvatarActor() ? GetAvatarActor() : GetOwner();
+
+	return ValidateBaseStatsConfiguration(bBaseAttributesExpected, StatsActor);
+}
+
+bool UPushAbilitySystemComponent::ValidateBaseStatsConfiguration(bool bBaseAttributesExpected, const AActor* StatsActor) const
+{
+	if (!bBaseAttributesExpected)
+	{
+		return true;
+	}
+
+	const FString ValidationContext = GetValidationContext();
+	if (!BaseStatsData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s expects BaseStatsData for startup attributes, but none is configured."),
+			*ValidationContext);
+		return false;
+	}
+
+	if (!StatsActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s expects BaseStatsData for startup attributes, but has no owner or avatar actor."),
+			*ValidationContext);
+		return false;
+	}
+
+	if (!FindBaseStatsForActor(StatsActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s expects BaseStatsData for startup attributes, but no row matches %s (%s)."),
+			*ValidationContext,
+			*GetNameSafe(StatsActor),
+			*GetNameSafe(StatsActor->GetClass()));
+		return false;
+	}
+
+	return true;
+}
+
+const FHeroBaseStats* UPushAbilitySystemComponent::FindBaseStatsForActor(const AActor* StatsActor) const
+{
+	if (!BaseStatsData || !StatsActor)
+	{
+		return nullptr;
+	}
+
+	for (const auto& DataPair : BaseStatsData->GetRowMap())
+	{
+		const FHeroBaseStats* BaseStats = BaseStatsData->FindRow<FHeroBaseStats>(DataPair.Key, "");
+		if (BaseStats && BaseStats->Class && StatsActor->IsA(BaseStats->Class))
+		{
+			return BaseStats;
+		}
+	}
+
+	return nullptr;
+}
+
+FString UPushAbilitySystemComponent::GetValidationContext() const
+{
+	const AActor* OwningActor = GetOwner();
+	const AActor* AvatarActorForContext = GetAvatarActor();
+	return FString::Printf(TEXT("%s (Owner=%s, Avatar=%s, AvatarClass=%s)"),
+		*GetPathName(),
+		*GetNameSafe(OwningActor),
+		*GetNameSafe(AvatarActorForContext),
+		AvatarActorForContext ? *GetNameSafe(AvatarActorForContext->GetClass()) : TEXT("None"));
 }
 
 void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)

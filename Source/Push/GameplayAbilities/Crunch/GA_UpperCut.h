@@ -29,7 +29,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
 	float UppercutLaunchSpeed = 1000.f;
-
+ 
 	UPROPERTY(EditDefaultsOnly, Category = "Launch")
 	float ComboSelfLaunchSpeed = 200.f;
 

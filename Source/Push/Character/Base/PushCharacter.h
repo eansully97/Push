@@ -43,11 +43,10 @@ protected:
 	 */
 public:
 	 virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UAbilitySystemComponent* GetActivePushAbilitySystemComponent() const;
 
 	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
 	void MoveSpeedUpdated(const FOnAttributeChangeData& Data);
 	 
 private:
@@ -56,14 +55,13 @@ private:
 
 	FDelegateHandle MoveSpeedChangedDelegateHandle;
 	void InitializeAbilitySystem();
+	UPushAbilitySystemComponent* ResolvePlayerStateAbilitySystemComponent() const;
 	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
+	UPushAbilitySystemComponent* ResolveDisplayAbilitySystemComponent() const;
 	UPushAttributeSet* ResolveAttributeSet() const;
 	void RegisterAttributeSetSubobjects(AActor* AttributeSetOwner) const;
 	void BindChangeDelegates();
 	void ClearChangeDelegates();
-	bool IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
-	bool CanProcessClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
-	bool IsClientGameplayEventThrottled(const FGameplayTag& EventTag);
 	void DeathTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StunTagUpdated(const FGameplayTag Tag, int32 Count);
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
@@ -90,11 +88,6 @@ private:
 	FDelegateHandle StunTagDelegateHandle;
 	FDelegateHandle StealthTagDelegateHandle;
 	FDelegateHandle AimingTagDelegateHandle;
-
-	TMap<FGameplayTag, double> LastAcceptedClientGameplayEventTimes;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability", meta = (ClampMin = "0.0"))
-	float ClientGameplayEventThrottleSeconds = 0.05f;
 
 	/*
 	*	OverheadWidget
@@ -134,7 +127,9 @@ private:
 	void Respawn();
 	void DeathMontageFinished();
 	void SetRagdollEnabled(bool bEnabled);
+	void PrepareMovementAndCollisionForDeath();
 	void CacheAliveCapsuleCollisionState();
+	void SetCapsuleCollisionForDeath(ECollisionEnabled::Type NewCollisionEnabled);
 	void DisableCapsuleCollisionForDeath();
 	void RestoreAliveCapsuleCollision();
 
@@ -147,7 +142,7 @@ private:
 	ECollisionEnabled::Type AliveCapsuleCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
 	ECollisionChannel AliveCapsuleObjectType = ECC_Pawn;
 	FCollisionResponseContainer AliveCapsuleCollisionResponses;
-	bool bCapsuleCollisionDisabledForDeath = false;
+	bool bCapsuleCollisionModifiedForDeath = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	UAnimMontage* DeathMontage;

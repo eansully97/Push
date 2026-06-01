@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AMinion::AMinion()
 {
@@ -25,7 +26,7 @@ void AMinion::SetGenericTeamId(const FGenericTeamId& NewTeamID)
 
 bool AMinion::IsActive() const
 {
-	return !IsDead();
+	return bIsActiveInPool;
 }
 
 bool AMinion::ShouldApplyInitialEffects() const
@@ -36,6 +37,7 @@ bool AMinion::ShouldApplyInitialEffects() const
 void AMinion::Activate()
 {
 	RespawnImmediately();
+	SetPoolActive(true);
 	ApplyGoalToBlackboard();
 	
 }
@@ -44,6 +46,7 @@ void AMinion::Activate(const FTransform& SpawnTransform)
 {
 	RespawnImmediately();
 	SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	SetPoolActive(true);
 	ApplyGoalToBlackboard();
 }
 
@@ -65,6 +68,18 @@ void AMinion::PossessedBy(AController* NewController)
 	ApplyGoalToBlackboard();
 }
 
+void AMinion::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, bIsActiveInPool);
+}
+
+void AMinion::SetPoolActive(bool bNewActive)
+{
+	bIsActiveInPool = bNewActive;
+}
+
 void AMinion::ApplyGoalToBlackboard() const
 {
 	if (AAIController* AIController = GetController<AAIController>())
@@ -82,6 +97,16 @@ void AMinion::PickMeshForTeamID()
 	{
 		GetMesh()->SetSkeletalMesh(*SkeletalMesh);
 	}
+}
+
+void AMinion::OnDead()
+{
+	SetPoolActive(false);
+}
+
+void AMinion::OnRespawn()
+{
+	SetPoolActive(true);
 }
 
 void AMinion::OnRep_TeamID()

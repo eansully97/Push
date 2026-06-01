@@ -3,7 +3,6 @@
 
 #include "PushCharacter.h"
 
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
@@ -142,6 +141,15 @@ void APushCharacter::SyncMoveSpeedFromAttribute()
 
 void APushCharacter::InitializeAbilitySystem()
 {
+	if (UsesPlayerStateAbilitySystem() && !ResolvePlayerStateAbilitySystemComponent())
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("%s expected a PlayerState-owned AbilitySystemComponent for %s, but none was available; ability initialization will retry when PlayerState is ready."),
+			*GetNameSafe(this),
+			*GetNameSafe(GetClass()));
+		return;
+	}
+
 	ActiveAbilitySystemComponent = ResolveAbilitySystemComponent();
 	ActiveAttributeSet = ResolveAttributeSet();
 
@@ -171,14 +179,34 @@ void APushCharacter::InitializeAbilitySystem()
 	}
 }
 
-UPushAbilitySystemComponent* APushCharacter::ResolveAbilitySystemComponent() const
+UPushAbilitySystemComponent* APushCharacter::ResolvePlayerStateAbilitySystemComponent() const
 {
 	if (const APushPlayerState* PushPlayerState = GetPlayerState<APushPlayerState>())
 	{
-		if (UPushAbilitySystemComponent* PlayerStateASC = PushPlayerState->GetPushAbilitySystemComponent())
+		return PushPlayerState->GetPushAbilitySystemComponent();
+	}
+
+	return nullptr;
+}
+
+UPushAbilitySystemComponent* APushCharacter::ResolveAbilitySystemComponent() const
+{
+	if (UsesPlayerStateAbilitySystem())
+	{
+		if (UPushAbilitySystemComponent* PlayerStateASC = ResolvePlayerStateAbilitySystemComponent())
 		{
 			return PlayerStateASC;
 		}
+	}
+
+	return PushAbilitySystemComponent;
+}
+
+UPushAbilitySystemComponent* APushCharacter::ResolveDisplayAbilitySystemComponent() const
+{
+	if (UPushAbilitySystemComponent* RuntimeASC = ResolveAbilitySystemComponent())
+	{
+		return RuntimeASC;
 	}
 
 	return PushAbilitySystemComponent;
@@ -207,7 +235,10 @@ void APushCharacter::RegisterAttributeSetSubobjects(AActor* AttributeSetOwner) c
 		{
 			if (UAttributeSet* AttributeSet = Cast<UAttributeSet>(Object))
 			{
-				ActiveAbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+				if (!ActiveAbilitySystemComponent->GetSpawnedAttributes().Contains(AttributeSet))
+				{
+					ActiveAbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+				}
 			}
 		},
 		false);
@@ -417,7 +448,7 @@ void APushCharacter::SetStatusGaugeEnabled(bool bEnabled)
 
 bool APushCharacter::IsDead() const
 {
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	const UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent();
 	return ASC && ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead);
 }
 
@@ -425,7 +456,7 @@ void APushCharacter::RespawnImmediately()
 {
 	if (HasAuthority())
 	{
-		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		if (UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent())
 		{
 			ASC->RemoveActiveEffectsWithGrantedTags(FGameplayTagContainer(PushGameplayTags::Status_Dead));
 		}
@@ -434,19 +465,17 @@ void APushCharacter::RespawnImmediately()
 
 void APushCharacter::StartDeathSequence()
 {
-	DisableCapsuleCollisionForDeath();
 	OnDead();
 
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	if (HasAuthority())
 	{
-		ASC->CancelAllAbilities();
+		if (UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent())
+		{
+			ASC->CancelAllAbilities();
+		}
 	}
 
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
-	{
-		MovementComponent->StopMovementImmediately();
-		MovementComponent->DisableMovement();
-	}
+	PrepareMovementAndCollisionForDeath();
 	
 	PlayDeathAnimation();
 	SetStatusGaugeEnabled(false);
@@ -457,9 +486,16 @@ void APushCharacter::PlayDeathAnimation()
 {
 	if (DeathMontage)
 	{
-		float MontageDuration = PlayAnimMontage(DeathMontage);
-		GetWorldTimerManager().SetTimer(DeathMontageTimerHandle, this, &ThisClass::DeathMontageFinished, MontageDuration + DeathMontageFinishTimeShift);
+		const float MontageDuration = PlayAnimMontage(DeathMontage);
+		const float RagdollDelay = MontageDuration + DeathMontageFinishTimeShift;
+		if (RagdollDelay > 0.f)
+		{
+			GetWorldTimerManager().SetTimer(DeathMontageTimerHandle, this, &ThisClass::DeathMontageFinished, RagdollDelay);
+			return;
+		}
 	}
+
+	DeathMontageFinished();
 }
 
 void APushCharacter::Respawn()
@@ -490,7 +526,7 @@ void APushCharacter::Respawn()
 		}
  	}
 
-	if (ActiveAbilitySystemComponent)
+	if (HasAuthority() && ActiveAbilitySystemComponent)
 	{
 		ActiveAbilitySystemComponent->ApplyFullStatEffect();
 	}
@@ -508,7 +544,6 @@ void APushCharacter::DeathMontageFinished()
 void APushCharacter::SetRagdollEnabled(bool bEnabled)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
-	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 
 	if (bEnabled)
@@ -521,6 +556,7 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 
 		const FTransform MeshWorldTransform = MeshComponent->GetComponentTransform();
 		const FName RagdollCollisionProfileName(TEXT("Ragdoll"));
+		DisableCapsuleCollisionForDeath();
 
 		MeshComponent->SetCollisionProfileName(RagdollCollisionProfileName);
 		MeshComponent->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
@@ -533,8 +569,6 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 		MeshComponent->SetSimulatePhysics(true);
 		MeshComponent->WakeAllRigidBodies();
 		MeshComponent->bBlendPhysics = true;
-
-		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	else
 	{
@@ -555,6 +589,26 @@ void APushCharacter::SetRagdollEnabled(bool bEnabled)
 	}
 }
 
+void APushCharacter::PrepareMovementAndCollisionForDeath()
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent)
+	{
+		DisableCapsuleCollisionForDeath();
+		return;
+	}
+
+	MovementComponent->StopMovementImmediately();
+	if (MovementComponent->IsMovingOnGround())
+	{
+		MovementComponent->DisableMovement();
+		DisableCapsuleCollisionForDeath();
+		return;
+	}
+	SetCapsuleCollisionForDeath(ECollisionEnabled::PhysicsOnly);
+	MovementComponent->SetMovementMode(MOVE_Falling);
+}
+
 void APushCharacter::CacheAliveCapsuleCollisionState()
 {
 	if (const UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
@@ -566,23 +620,28 @@ void APushCharacter::CacheAliveCapsuleCollisionState()
 	}
 }
 
-void APushCharacter::DisableCapsuleCollisionForDeath()
+void APushCharacter::SetCapsuleCollisionForDeath(ECollisionEnabled::Type NewCollisionEnabled)
 {
 	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
 	{
-		if (!bCapsuleCollisionDisabledForDeath)
+		if (!bCapsuleCollisionModifiedForDeath)
 		{
 			CacheAliveCapsuleCollisionState();
 		}
 
-		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		bCapsuleCollisionDisabledForDeath = true;
+		CapsuleComp->SetCollisionEnabled(NewCollisionEnabled);
+		bCapsuleCollisionModifiedForDeath = true;
 	}
+}
+
+void APushCharacter::DisableCapsuleCollisionForDeath()
+{
+	SetCapsuleCollisionForDeath(ECollisionEnabled::NoCollision);
 }
 
 void APushCharacter::RestoreAliveCapsuleCollision()
 {
-	if (!bCapsuleCollisionDisabledForDeath)
+	if (!bCapsuleCollisionModifiedForDeath)
 		return;
 
 	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
@@ -593,7 +652,7 @@ void APushCharacter::RestoreAliveCapsuleCollision()
 		CapsuleComp->SetCollisionEnabled(AliveCapsuleCollisionEnabled);
 	}
 
-	bCapsuleCollisionDisabledForDeath = false;
+	bCapsuleCollisionModifiedForDeath = false;
 }
 
 void APushCharacter::OnDead()
@@ -628,7 +687,7 @@ void APushCharacter::OnStealthRemoved()
 
 bool APushCharacter::IsInStealth() const
 {
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	const UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent();
 	return ASC && ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stealth);
 }
 
@@ -667,71 +726,17 @@ UAbilitySystemComponent* APushCharacter::GetAbilitySystemComponent() const
 	return ResolveAbilitySystemComponent();
 }
 
+UAbilitySystemComponent* APushCharacter::GetActivePushAbilitySystemComponent() const
+{
+	return ActiveAbilitySystemComponent;
+}
+
 TArray<FPushInputActivatedAbilityDisplayData> APushCharacter::GetDisplayInputActivatedAbilities() const
 {
-	if (const UPushAbilitySystemComponent* ASC = ResolveAbilitySystemComponent())
+	if (const UPushAbilitySystemComponent* ASC = ResolveDisplayAbilitySystemComponent())
 	{
 		return ASC->GetDisplayInputActivatedAbilities();
 	}
 
 	return {};
-}
-
-bool APushCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
-                                                             const FGameplayEventData& EventData)
-{
-	return IsWellFormedClientGameplayEvent(EventTag, EventData);
-}
-
-void APushCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayTag& EventTag,
-                                                                    const FGameplayEventData& EventData)
-{
-	if (!CanProcessClientGameplayEvent(EventTag, EventData) || IsClientGameplayEventThrottled(EventTag))
-		return;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
-}
-
-bool APushCharacter::IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
-{
-	const bool bIsAllowedInputEvent =
-		EventTag == PushGameplayTags::Input_Ability_BasicAttack_Pressed
-		|| EventTag == PushGameplayTags::Input_Ability_SecondaryAttack_Pressed;
-
-	return bIsAllowedInputEvent
-		&& EventData.TargetData.Num() == 0
-		&& EventData.Instigator == nullptr
-		&& EventData.Target == nullptr;
-}
-
-bool APushCharacter::CanProcessClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const
-{
-	if (!IsWellFormedClientGameplayEvent(EventTag, EventData))
-	{
-		return false;
-	}
-
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	return ASC
-		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead)
-		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun);
-}
-
-bool APushCharacter::IsClientGameplayEventThrottled(const FGameplayTag& EventTag)
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return true;
-	}
-
-	const double CurrentTime = World->GetTimeSeconds();
-	const double* LastAcceptedTime = LastAcceptedClientGameplayEventTimes.Find(EventTag);
-	if (LastAcceptedTime && CurrentTime - *LastAcceptedTime < ClientGameplayEventThrottleSeconds)
-	{
-		return true;
-	}
-
-	LastAcceptedClientGameplayEventTimes.Add(EventTag, CurrentTime);
-	return false;
 }

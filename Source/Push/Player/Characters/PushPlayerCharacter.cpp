@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Push/Push.h"
@@ -40,9 +41,20 @@ void APushPlayerCharacter::PawnClientRestart()
 {
 	Super::PawnClientRestart();
 
+	if (!GameplayInputMappingContext)
+	{
+		return;
+	}
+
 	if (APlayerController* OwningPlayerController = GetController<APlayerController>())
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = OwningPlayerController->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		ULocalPlayer* LocalPlayer = OwningPlayerController->GetLocalPlayer();
+		if (!LocalPlayer)
+		{
+			return;
+		}
+
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			InputSubsystem->RemoveMappingContext(GameplayInputMappingContext);
 			InputSubsystem->AddMappingContext(GameplayInputMappingContext, 0);
@@ -61,13 +73,28 @@ void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::Jump);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLookInput);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMoveInput);
+		if (JumpAction)
+		{
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::Jump);
+		}
 
-		// Optimal Ability Input Setup
+		if (LookAction)
+		{
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLookInput);
+		}
+
+		if (MoveAction)
+		{
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMoveInput);
+		}
+
 		for (const auto& AbilityActionPair : AbilityInputActions)
 		{
+			if (AbilityActionPair.Key == EAbilityInputID::None || !AbilityActionPair.Value)
+			{
+				continue;
+			}
+
 			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Triggered, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
 			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Completed, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
 			EnhancedInputComponent->BindAction(AbilityActionPair.Value, ETriggerEvent::Canceled, this, &ThisClass::HandleAbilityInput, AbilityActionPair.Key);
@@ -94,7 +121,7 @@ void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
 void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID)
 {
 	const bool bIsPressed = ActionValue.Get<bool>();
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent();
 	if (!ASC)
 	{
 		return;
@@ -162,6 +189,72 @@ void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionVal
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, PushGameplayTags::Input_Ability_SecondaryAttack_Pressed, FGameplayEventData());
 		Server_SendGameplayEventToSelf(PushGameplayTags::Input_Ability_SecondaryAttack_Pressed, FGameplayEventData());
 	}
+}
+
+bool APushPlayerCharacter::Server_SendGameplayEventToSelf_Validate(const FGameplayTag& EventTag,
+                                                                    const FGameplayEventData& EventData)
+{
+	return IsPossessedByPlayerController() && IsWellFormedClientGameplayEvent(EventTag, EventData);
+}
+
+void APushPlayerCharacter::Server_SendGameplayEventToSelf_Implementation(const FGameplayTag& EventTag,
+                                                                         const FGameplayEventData& EventData)
+{
+	if (!CanProcessClientGameplayEvent(EventTag, EventData) || IsClientGameplayEventThrottled(EventTag))
+		return;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventTag, EventData);
+}
+
+bool APushPlayerCharacter::IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag,
+                                                           const FGameplayEventData& EventData) const
+{
+	const bool bIsAllowedInputEvent =
+		EventTag == PushGameplayTags::Input_Ability_BasicAttack_Pressed
+		|| EventTag == PushGameplayTags::Input_Ability_SecondaryAttack_Pressed;
+
+	return bIsAllowedInputEvent
+		&& EventData.TargetData.Num() == 0
+		&& EventData.Instigator == nullptr
+		&& EventData.Target == nullptr;
+}
+
+bool APushPlayerCharacter::IsPossessedByPlayerController() const
+{
+	return Cast<APlayerController>(GetController()) != nullptr;
+}
+
+bool APushPlayerCharacter::CanProcessClientGameplayEvent(const FGameplayTag& EventTag,
+                                                         const FGameplayEventData& EventData) const
+{
+	if (!IsPossessedByPlayerController() || !IsWellFormedClientGameplayEvent(EventTag, EventData))
+	{
+		return false;
+	}
+
+	const UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent();
+	return ASC
+		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead)
+		&& !ASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun);
+}
+
+bool APushPlayerCharacter::IsClientGameplayEventThrottled(const FGameplayTag& EventTag)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return true;
+	}
+
+	const double CurrentTime = World->GetTimeSeconds();
+	const double* LastAcceptedTime = LastAcceptedClientGameplayEventTimes.Find(EventTag);
+	if (LastAcceptedTime && CurrentTime - *LastAcceptedTime < ClientGameplayEventThrottleSeconds)
+	{
+		return true;
+	}
+
+	LastAcceptedClientGameplayEventTimes.Add(EventTag, CurrentTime);
+	return false;
 }
 
 void APushPlayerCharacter::SetInputEnabledFromPlayerController(bool bEnabled)

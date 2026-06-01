@@ -24,13 +24,20 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ShouldApplyInitialEffects() const override;
 	
 private:
+	void SetPoolActive(bool bNewActive);
 	void PickMeshForTeamID();
 	void ApplyGoalToBlackboard() const;
 
+	virtual void OnDead() override;
+	virtual void OnRespawn() override;
 	virtual void OnRep_TeamID() override;
+
+	UPROPERTY(Replicated)
+	bool bIsActiveInPool = false;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	TMap<FGenericTeamId, USkeletalMesh*> TeamMeshMap;

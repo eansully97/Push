@@ -53,6 +53,7 @@ void APushAIController::OnUnPossess()
 	UnbindTargetTagEvents();
 	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
 	bIsPawnDead = false;
+	bIsPawnStunned = false;
 
 	Super::OnUnPossess();
 }
@@ -73,6 +74,7 @@ void APushAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	UnbindTargetTagEvents();
 	GetWorldTimerManager().ClearTimer(RememberedTargetTimerHandle);
 	bIsPawnDead = false;
+	bIsPawnStunned = false;
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -245,6 +247,7 @@ void APushAIController::HideTargetForStealth(AActor* TargetActor)
 	if (GetCurrentTarget() == TargetActor)
 	{
 		ClearCurrentTargetBlackboardValue();
+		SetCurrentTarget(GetNextPerceivedActor());
 	}
 }
 
@@ -392,15 +395,19 @@ void APushAIController::TargetStateTagUpdated(const FGameplayTag Tag, int32 Coun
 void APushAIController::ClearAndDisableAllSenses()
 {
 	AIPerceptionComponent->AgeStimuli(TNumericLimits<float>::Max());
-
-	for (auto SenseConfigIt = AIPerceptionComponent->GetSensesConfigIterator(); SenseConfigIt; ++SenseConfigIt)
-	{
-		AIPerceptionComponent->SetSenseEnabled((*SenseConfigIt)->GetSenseImplementation(), false);
-	}
+	DisableAllSenses();
 
 	ClearRememberedTarget();
 	UnbindTargetTagEvents();
 	ClearCurrentTargetBlackboardValue();
+}
+
+void APushAIController::DisableAllSenses()
+{
+	for (auto SenseConfigIt = AIPerceptionComponent->GetSensesConfigIterator(); SenseConfigIt; ++SenseConfigIt)
+	{
+		AIPerceptionComponent->SetSenseEnabled((*SenseConfigIt)->GetSenseImplementation(), false);
+	}
 }
 
 void APushAIController::EnableAllSenses()
@@ -409,6 +416,17 @@ void APushAIController::EnableAllSenses()
 	{
 		AIPerceptionComponent->SetSenseEnabled((*SenseConfigIt)->GetSenseImplementation(), true);
 	}
+}
+
+void APushAIController::RefreshCurrentTarget()
+{
+	AActor* CurrentTarget = GetCurrentTarget();
+	if (CurrentTarget && !IsDeadTarget(CurrentTarget) && !IsStealthedTarget(CurrentTarget))
+	{
+		return;
+	}
+
+	SetCurrentTarget(GetNextPerceivedActor());
 }
 
 void APushAIController::BindPawnDeathTagEvents(APawn* PawnToBind)
@@ -422,6 +440,8 @@ void APushAIController::BindPawnDeathTagEvents(APawn* PawnToBind)
 	PawnDeathTagASC = PawnASC;
 	PawnDeadTagDelegateHandle = PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead)
 		.AddUObject(this, &ThisClass::PawnDeadTagUpdated);
+	PawnStunTagDelegateHandle = PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun)
+		.AddUObject(this, &ThisClass::PawnStunTagUpdated);
 
 	RefreshPawnDeathState();
 }
@@ -434,10 +454,16 @@ void APushAIController::UnbindPawnDeathTagEvents()
 		{
 			PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Dead).Remove(PawnDeadTagDelegateHandle);
 		}
+
+		if (PawnStunTagDelegateHandle.IsValid())
+		{
+			PawnASC->RegisterGameplayTagEvent(PushGameplayTags::Status_Stun).Remove(PawnStunTagDelegateHandle);
+		}
 	}
 
 	PawnDeathTagASC.Reset();
 	PawnDeadTagDelegateHandle.Reset();
+	PawnStunTagDelegateHandle.Reset();
 }
 
 void APushAIController::RefreshPawnDeathState()
@@ -448,6 +474,9 @@ void APushAIController::RefreshPawnDeathState()
 
 	const int32 DeadTagCount = PawnASC->HasMatchingGameplayTag(PushGameplayTags::Status_Dead) ? 1 : 0;
 	PawnDeadTagUpdated(PushGameplayTags::Status_Dead, DeadTagCount);
+
+	const int32 StunTagCount = PawnASC->HasMatchingGameplayTag(PushGameplayTags::Status_Stun) ? 1 : 0;
+	PawnStunTagUpdated(PushGameplayTags::Status_Stun, StunTagCount);
 }
 
 void APushAIController::PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count)
@@ -463,11 +492,49 @@ void APushAIController::PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count)
 	}
 	else
 	{
-		if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
-		{
-			ActiveBrainComponent->StartLogic();
-		}
-		EnableAllSenses();
 		bIsPawnDead = false;
+
+		if (!bIsPawnStunned)
+		{
+			if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
+			{
+				ActiveBrainComponent->StartLogic();
+			}
+
+			EnableAllSenses();
+			RefreshCurrentTarget();
+		}
+	}
+}
+
+void APushAIController::PawnStunTagUpdated(const FGameplayTag Tag, int32 Count)
+{
+	if (Count != 0)
+	{
+		if (!bIsPawnDead)
+		{
+			if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
+			{
+				ActiveBrainComponent->StopLogic("Stunned");
+			}
+
+			DisableAllSenses();
+		}
+		bIsPawnStunned = true;
+	}
+	else
+	{
+		bIsPawnStunned = false;
+
+		if (!bIsPawnDead)
+		{
+			if (UBrainComponent* ActiveBrainComponent = GetBrainComponent())
+			{
+				ActiveBrainComponent->StartLogic();
+			}
+
+			EnableAllSenses();
+			RefreshCurrentTarget();
+		}
 	}
 }

@@ -33,6 +33,12 @@ public:
 private:
 	void ApplyStartupEffects(bool bBaseAttributesInitialized, bool bApplyInitialEffects);
 	void GiveInitialAbilities();
+	void BindHealthAttributeDelegate();
+	bool ValidateConfiguredDataOnce(bool bApplyInitialEffects);
+	bool ValidateStartupConfiguration(bool bApplyInitialEffects) const;
+	bool ValidateBaseStatsConfiguration(bool bBaseAttributesExpected, const AActor* StatsActor) const;
+	const FHeroBaseStats* FindBaseStatsForActor(const AActor* StatsActor) const;
+	FString GetValidationContext() const;
 	bool HasInitialEffects() const;
 	bool ApplyInitialEffects();
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
@@ -57,4 +63,8 @@ private:
 
 	bool bStartupEffectsApplied = false;
 	bool bInitialAbilitiesGranted = false;
+	bool bConfiguredDataValidated = false;
+	bool bConfiguredDataValid = false;
+	bool bHealthAttributeDelegateBound = false;
+	FDelegateHandle HealthAttributeChangedDelegateHandle;
 };

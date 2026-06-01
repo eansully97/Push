@@ -37,11 +37,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Attribute")
 	FGameplayAttribute Attribute;
 
+	void BindAttribute();
+	void StartAttributeBindingRetry();
+	void StopAttributeBindingRetry();
 	void SetValue(float NewValue);
 	void AttributeChanged(const FOnAttributeChangeData& ChangeData);
 	void ClearAttributeBinding();
 	FNumberFormattingOptions FormattingOptions;
 	FDelegateHandle AttributeChangedDelegateHandle;
+	FTimerHandle AttributeBindingRetryTimerHandle;
 
 	UPROPERTY()
 	UAbilitySystemComponent* BoundAbilitySystemComponent = nullptr;

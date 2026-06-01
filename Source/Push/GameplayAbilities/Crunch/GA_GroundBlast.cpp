@@ -5,9 +5,11 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Engine/OverlapResult.h"
+#include "GameplayCueManager.h"
 #include "GenericTeamAgentInterface.h"
 #include "Push/GAS/Targeting/TargetActor_GroundPick.h"
 #include "Push/PushGameplayTags.h"
@@ -103,7 +105,18 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
 		ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
-		ASC->ExecuteGameplayCue(PushGameplayTags::GameplayCue_CameraShake);
+
+		if (CurrentActorInfo && CurrentActorInfo->IsLocallyControlled())
+		{
+			if (AActor* AvatarActor = GetAvatarActorFromActorInfo())
+			{
+				UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
+					AvatarActor,
+					PushGameplayTags::GameplayCue_CameraShake,
+					EGameplayCueEvent::Executed,
+					FGameplayCueParameters());
+			}
+		}
 	}
 
 	if (CastAbilityMontage)

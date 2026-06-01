@@ -358,6 +358,7 @@ bool UGA_CountessExecute::IsValidExecuteTarget(AActor* TargetActor) const
 		return false;
 	}
 
+	// Execute is intentionally hero-only; minions use their own combat/death flow.
 	if (!TargetActor->IsA<APushPlayerCharacter>())
 	{
 		return false;

@@ -68,6 +68,11 @@ public:
 	void StartCooldown(float CooldownTimeRemaining, float CooldownDuration);
 
 private:
+	UAbilitySystemComponent* ResolveOwnerAbilitySystemComponent() const;
+	void StartCooldownBindingRetry();
+	void StopCooldownBindingRetry();
+	void RetryCooldownBinding();
+
 	UPROPERTY(meta = (BindWidget))
 	UImage* Icon;
 
@@ -106,6 +111,7 @@ private:
 
 	FTimerHandle CooldownTimerHandle;
 	FTimerHandle CooldownUpdateTimerHandle;
+	FTimerHandle CooldownBindingRetryTimerHandle;
 	TMap<FGameplayTag, FDelegateHandle> CooldownTagDelegateHandles;
 
 	void ClearCooldownTimers();

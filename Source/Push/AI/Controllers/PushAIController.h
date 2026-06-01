@@ -42,6 +42,9 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "AI Behavior")
 	bool bIsPawnDead = false;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = "AI Behavior")
+	bool bIsPawnStunned = false;
+
 	UFUNCTION()
 	void TargetPerceptionUpdated(AActor* TargetActor, FAIStimulus Stimulus);
 
@@ -71,12 +74,15 @@ private:
 	void TargetStateTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	void ClearAndDisableAllSenses();
+	void DisableAllSenses();
 	void EnableAllSenses();
+	void RefreshCurrentTarget();
 	
 	void BindPawnDeathTagEvents(APawn* PawnToBind);
 	void UnbindPawnDeathTagEvents();
 	void RefreshPawnDeathState();
 	void PawnDeadTagUpdated(const FGameplayTag Tag, int32 Count);
+	void PawnStunTagUpdated(const FGameplayTag Tag, int32 Count);
 
 	TWeakObjectPtr<AActor> TargetTagEventActor;
 	FDelegateHandle TargetDeadTagDelegateHandle;
@@ -84,6 +90,7 @@ private:
 
 	TWeakObjectPtr<UAbilitySystemComponent> PawnDeathTagASC;
 	FDelegateHandle PawnDeadTagDelegateHandle;
+	FDelegateHandle PawnStunTagDelegateHandle;
 
 	TWeakObjectPtr<AActor> RememberedTarget;
 	FTimerHandle RememberedTargetTimerHandle;

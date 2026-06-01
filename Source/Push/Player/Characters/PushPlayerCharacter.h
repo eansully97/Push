@@ -70,7 +70,19 @@ private:
 	void HandleMoveInput(const FInputActionValue& ActionValue);
 	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
 	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SendGameplayEventToSelf(const FGameplayTag& EventTag, const FGameplayEventData& EventData);
+	bool IsWellFormedClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
+	bool IsPossessedByPlayerController() const;
+	bool CanProcessClientGameplayEvent(const FGameplayTag& EventTag, const FGameplayEventData& EventData) const;
+	bool IsClientGameplayEventThrottled(const FGameplayTag& EventTag);
+
 	void SetInputEnabledFromPlayerController(bool bEnabled);
+
+	TMap<FGameplayTag, double> LastAcceptedClientGameplayEventTimes;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability", meta = (ClampMin = "0.0"))
+	float ClientGameplayEventThrottleSeconds = 0.05f;
 
 	/*
 	*	GAS

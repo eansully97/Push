@@ -20,9 +20,14 @@ class PUSH_API UGameplayWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	void ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities);
 
 private:
+	void BindOwnerAbilitySystemComponent();
+	void StartAbilitySystemBindingRetry();
+	void StopAbilitySystemBindingRetry();
+
 	UPROPERTY(meta = (BindWidget))
 	UValueGauge* HealthBar;
 
@@ -34,4 +39,6 @@ private:
 
 	UPROPERTY()
 	UAbilitySystemComponent* OwnerAbilitySystemComponent;
+
+	FTimerHandle AbilitySystemBindingRetryTimerHandle;
 };
