@@ -7,7 +7,9 @@
 #include "GenericTeamAgentInterface.h"
 #include "Abilities/GameplayAbility.h"
 #include "Components/DecalComponent.h"
+#include "Components/MeshComponent.h"
 #include "Engine/OverlapResult.h"
+#include "GameFramework/Character.h"
 #include "Push/Push.h"
 
 ATargetActor_GroundPick::ATargetActor_GroundPick()
@@ -35,7 +37,15 @@ void ATargetActor_GroundPick::Tick(float DeltaTime)
 	if (PrimaryPC && PrimaryPC->IsLocalPlayerController())
 	{
 		SetActorLocation(GetTargetPoint());
+		RefreshTargetOverlays();
 	}
+}
+
+void ATargetActor_GroundPick::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClearTargetOverlays();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
@@ -55,19 +65,20 @@ void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
 
 	for (const auto& OverlapResult : OverlapResults)
 	{
-		if (OwnerTeamInterface && OwnerTeamInterface->GetTeamAttitudeTowards(*OverlapResult.GetActor()) == ETeamAttitude::Friendly && !bShouldTargetFriendly)
+		AActor* TargetActor = OverlapResult.GetActor();
+		if (!IsValidTargetActor(TargetActor, OwnerTeamInterface))
+		{
 			continue;
-
-		if (OwnerTeamInterface && OwnerTeamInterface->GetTeamAttitudeTowards(*OverlapResult.GetActor()) == ETeamAttitude::Hostile && !bShouldTargetEnemy)
-			continue;
+		}
 		
-		TargetActors.Add(OverlapResult.GetActor());
+		TargetActors.Add(TargetActor);
 	}
 
 	FGameplayAbilityTargetDataHandle TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(TargetActors.Array(), false);
 	FGameplayAbilityTargetData_SingleTargetHit* HitLocation = new FGameplayAbilityTargetData_SingleTargetHit;
 	HitLocation->HitResult.ImpactPoint = GetActorLocation();
 	TargetData.Add(HitLocation);
+	ClearTargetOverlays();
 	TargetDataReadyDelegate.Broadcast(TargetData);
 }
 
@@ -120,4 +131,150 @@ void ATargetActor_GroundPick::SetTargetAreaRadius(const float NewRadius)
 {
 	TargetAreaRadius = NewRadius;
 	DecalComponent->DecalSize = FVector(NewRadius);
+}
+
+void ATargetActor_GroundPick::RefreshTargetOverlays()
+{
+	if (!TargetOverlayMaterial)
+	{
+		ClearTargetOverlays();
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		ClearTargetOverlays();
+		return;
+	}
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionObjectQueryParams QueryParams;
+	QueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(TargetAreaRadius);
+	World->OverlapMultiByObjectType(OverlapResults, GetActorLocation(), FQuat::Identity, QueryParams, CollisionShape);
+
+	const IGenericTeamAgentInterface* OwnerTeamInterface = nullptr;
+	if (OwningAbility)
+	{
+		OwnerTeamInterface = Cast<IGenericTeamAgentInterface>(OwningAbility->GetAvatarActorFromActorInfo());
+	}
+
+	TSet<UMeshComponent*> DesiredOverlayMeshes;
+	DesiredOverlayMeshes.Reserve(OverlapResults.Num());
+	for (const FOverlapResult& OverlapResult : OverlapResults)
+	{
+		AActor* TargetActor = OverlapResult.GetActor();
+		if (!IsValidTargetActor(TargetActor, OwnerTeamInterface))
+		{
+			continue;
+		}
+
+		if (UMeshComponent* MeshComponent = GetOverlayMeshComponent(TargetActor))
+		{
+			DesiredOverlayMeshes.Add(MeshComponent);
+			ApplyTargetOverlay(MeshComponent);
+		}
+	}
+
+	for (int32 Index = OverlayEntries.Num() - 1; Index >= 0; --Index)
+	{
+		UMeshComponent* MeshComponent = OverlayEntries[Index].MeshComponent.Get();
+		if (!MeshComponent || !DesiredOverlayMeshes.Contains(MeshComponent))
+		{
+			RestoreTargetOverlay(Index);
+		}
+	}
+}
+
+void ATargetActor_GroundPick::ClearTargetOverlays()
+{
+	for (int32 Index = OverlayEntries.Num() - 1; Index >= 0; --Index)
+	{
+		RestoreTargetOverlay(Index);
+	}
+}
+
+void ATargetActor_GroundPick::ApplyTargetOverlay(UMeshComponent* MeshComponent)
+{
+	if (!MeshComponent || HasOverlayEntryFor(MeshComponent))
+	{
+		return;
+	}
+
+	FGroundPickOverlayEntry OverlayEntry;
+	OverlayEntry.MeshComponent = MeshComponent;
+	OverlayEntry.PreviousOverlayMaterial = MeshComponent->GetOverlayMaterial();
+	OverlayEntry.AppliedOverlayMaterial = TargetOverlayMaterial;
+	OverlayEntries.Add(OverlayEntry);
+
+	MeshComponent->SetOverlayMaterial(TargetOverlayMaterial);
+}
+
+void ATargetActor_GroundPick::RestoreTargetOverlay(int32 OverlayEntryIndex)
+{
+	if (!OverlayEntries.IsValidIndex(OverlayEntryIndex))
+	{
+		return;
+	}
+
+	UMeshComponent* MeshComponent = OverlayEntries[OverlayEntryIndex].MeshComponent.Get();
+	if (MeshComponent && MeshComponent->GetOverlayMaterial() == OverlayEntries[OverlayEntryIndex].AppliedOverlayMaterial)
+	{
+		MeshComponent->SetOverlayMaterial(OverlayEntries[OverlayEntryIndex].PreviousOverlayMaterial);
+	}
+
+	OverlayEntries.RemoveAtSwap(OverlayEntryIndex);
+}
+
+bool ATargetActor_GroundPick::HasOverlayEntryFor(UMeshComponent* MeshComponent) const
+{
+	for (const FGroundPickOverlayEntry& OverlayEntry : OverlayEntries)
+	{
+		if (OverlayEntry.MeshComponent.Get() == MeshComponent)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool ATargetActor_GroundPick::IsValidTargetActor(AActor* TargetActor, const IGenericTeamAgentInterface* OwnerTeamInterface) const
+{
+	if (!TargetActor)
+	{
+		return false;
+	}
+
+	if (OwnerTeamInterface)
+	{
+		const ETeamAttitude::Type TeamAttitude = OwnerTeamInterface->GetTeamAttitudeTowards(*TargetActor);
+		if (TeamAttitude == ETeamAttitude::Friendly && !bShouldTargetFriendly)
+		{
+			return false;
+		}
+
+		if (TeamAttitude == ETeamAttitude::Hostile && !bShouldTargetEnemy)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+UMeshComponent* ATargetActor_GroundPick::GetOverlayMeshComponent(AActor* TargetActor) const
+{
+	if (!TargetActor)
+	{
+		return nullptr;
+	}
+
+	if (const ACharacter* TargetCharacter = Cast<ACharacter>(TargetActor))
+	{
+		return TargetCharacter->GetMesh();
+	}
+
+	return TargetActor->FindComponentByClass<UMeshComponent>();
 }

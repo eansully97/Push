@@ -21,6 +21,11 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Siphon, "Cooldown.Ability.Countess.Siphon");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Ability_Countess_Execute, "Cooldown.Ability.Countess.Execute");
 
+	// Data
+	UE_DEFINE_GAMEPLAY_TAG(Data_Value, "Data.Value");
+	UE_DEFINE_GAMEPLAY_TAG(Data_Value_Experience, "Data.Value.Experience");
+	UE_DEFINE_GAMEPLAY_TAG(Data_Value_Gold, "Data.Value.Gold");
+	
 	// Input
 	UE_DEFINE_GAMEPLAY_TAG(Input_Ability_BasicAttack_Pressed, "Input.Ability.BasicAttack.Pressed");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Ability_SecondaryAttack_Pressed, "Input.Ability.SecondaryAttack.Pressed");
@@ -38,6 +43,7 @@ namespace PushGameplayTags
 
 	// Status
 	UE_DEFINE_GAMEPLAY_TAG(Status_Dead, "Status.Dead");
+	UE_DEFINE_GAMEPLAY_TAG(Status_Hero, "Status.Hero");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Health_Full, "Status.Health.Full");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Health_Empty, "Status.Health.Empty");
 	UE_DEFINE_GAMEPLAY_TAG(Status_Mana_Full, "Status.Mana.Full");

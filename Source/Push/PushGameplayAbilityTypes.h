@@ -28,6 +28,7 @@ enum class EPushGameplayEffectID : uint8
 	FullStat	UMETA(DisplayName = "FullStat"),
 	HealthRegen	UMETA(DisplayName = "HealthRegen"),
 	ManaRegen	UMETA(DisplayName = "ManaRegen"),
+	AddHeroTag  UMETA(DisplayName = "AddHeroTag"),
 };
 
 USTRUCT(BlueprintType)

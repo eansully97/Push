@@ -23,6 +23,11 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Siphon);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ability_Countess_Execute);
 
+	// Data
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Value);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Value_Experience);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Value_Gold);
+
 	// Input
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_BasicAttack_Pressed);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Ability_SecondaryAttack_Pressed);
@@ -40,6 +45,7 @@ namespace PushGameplayTags
 
 	// Status
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Dead);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Hero);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Health_Full);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Health_Empty);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Mana_Full);

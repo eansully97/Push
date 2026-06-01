@@ -28,6 +28,7 @@ public:
 	TSubclassOf<UGameplayEffect> GetFullStatEffect() const;
 	TSubclassOf<UGameplayEffect> GetHealthRegenEffect() const;
 	TSubclassOf<UGameplayEffect> GetManaRegenEffect() const;
+	TSubclassOf<UGameplayEffect> GetAddHeroTagEffect() const;
 	bool ValidateConfiguredData() const;
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
@@ -60,7 +61,7 @@ private:
 	TMap<EAbilityInputID, FPushInputActivatedAbility> InputActivatedAbilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities")
-	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+	TArray<TSubclassOf<UGameplayAbility>> PassiveAbilities;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Base Stats")
 	UDataTable* BaseStatsData;

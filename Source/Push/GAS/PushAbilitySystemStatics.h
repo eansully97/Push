@@ -18,4 +18,5 @@ class PUSH_API UPushAbilitySystemStatics : public UBlueprintFunctionLibrary
 public:
 	static float GetStaticCooldownDurationForAbility(const UGameplayAbility* Ability);
 	static int32 GetStaticCostForAbility(const UGameplayAbility* Ability);
+	static bool IsHero(const AActor* ActorToCheck);
 };

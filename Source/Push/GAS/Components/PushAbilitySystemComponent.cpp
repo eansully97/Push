@@ -3,6 +3,8 @@
 
 #include "PushAbilitySystemComponent.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "GameplayEffectExtension.h"
 #include "Push/PushGameplayTags.h"
 #include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
@@ -89,6 +91,7 @@ void UPushAbilitySystemComponent::ApplyStartupEffects(bool bBaseAttributesInitia
 		AuthApplyGameplayEffect(GetFullStatEffect());
 		AuthApplyGameplayEffect(GetHealthRegenEffect());
 		AuthApplyGameplayEffect(GetManaRegenEffect());
+		AuthApplyGameplayEffect(GetAddHeroTagEffect());
 	}
 
 	bStartupEffectsApplied = true;
@@ -139,7 +142,7 @@ void UPushAbilitySystemComponent::GiveInitialAbilities()
 		}
 	}
 
-	for (const auto& AbilityClass : DefaultAbilities)
+	for (const auto& AbilityClass : PassiveAbilities)
 	{
 		if (AbilityClass)
 		{
@@ -218,7 +221,7 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 	GameplayEffects = DefaultsSource->GameplayEffects;
 	InitialEffects = DefaultsSource->InitialEffects;
 	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
-	DefaultAbilities = DefaultsSource->DefaultAbilities;
+	PassiveAbilities = DefaultsSource->PassiveAbilities;
 	BaseStatsData = DefaultsSource->BaseStatsData;
 }
 
@@ -294,6 +297,11 @@ TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetManaRegenEffect() c
 	return GetGameplayEffect(EPushGameplayEffectID::ManaRegen);
 }
 
+TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetAddHeroTagEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::AddHeroTag);
+}
+
 bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 {
 	bool bIsValid = true;
@@ -353,7 +361,7 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 		}
 	}
 
-	for (const TSubclassOf<UGameplayAbility>& AbilityClass : DefaultAbilities)
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : PassiveAbilities)
 	{
 		if (!AbilityClass)
 		{
@@ -499,6 +507,12 @@ void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& Ch
 			{
 				RemoveTransientEffectsForDeath();
 				AuthApplyGameplayEffect(GetDeathEffect());
+
+				FGameplayEventData DeadAbilityEventData;
+				if (ChangeData.GEModData)
+					DeadAbilityEventData.ContextHandle = ChangeData.GEModData->EffectSpec.GetContext();
+
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetOwner(), PushGameplayTags::Status_Dead, DeadAbilityEventData);
 			}
 		}
 		else

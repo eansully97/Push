@@ -3,8 +3,11 @@
 
 #include "PushAbilitySystemStatics.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "GameplayEffect.h"
 #include "Abilities/GameplayAbility.h"
+#include "Push/PushGameplayTags.h"
 
 float UPushAbilitySystemStatics::GetStaticCooldownDurationForAbility(const UGameplayAbility* Ability)
 {
@@ -32,4 +35,16 @@ int32 UPushAbilitySystemStatics::GetStaticCostForAbility(const UGameplayAbility*
 	float CostCost = 0;
 	CostEffect->Modifiers[0].ModifierMagnitude.GetStaticMagnitudeIfPossible(1, CostCost);
 	return FMath::Abs(CostCost);
+}
+
+bool UPushAbilitySystemStatics::IsHero(const AActor* ActorToCheck)
+{
+	if (const IAbilitySystemInterface* ActorASI = Cast<IAbilitySystemInterface>(ActorToCheck))
+	{
+		if (UAbilitySystemComponent* ActorASC = ActorASI->GetAbilitySystemComponent())
+		{
+			return ActorASC->HasMatchingGameplayTag(PushGameplayTags::Status_Hero);
+		}
+	}
+	return false;
 }
