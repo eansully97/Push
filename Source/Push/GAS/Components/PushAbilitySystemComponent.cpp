@@ -9,6 +9,7 @@
 #include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
 #include "Push/GAS/Attributes/PushHeroAttributeSet.h"
+#include "Push/GAS/Data/PA_AbilitySystemGenerics.h"
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {
@@ -23,7 +24,7 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 
 	const AActor* StatsActor = GetAvatarActor() ? GetAvatarActor() : GetOwner();
 
-	if (!BaseStatsData)
+	if (!AbilitySystemGenerics || !AbilitySystemGenerics->GetBaseDataTable())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s has no BaseStatsData configured; base attributes were not initialized for %s."),
 			*GetValidationContext(),
@@ -60,7 +61,7 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 	return true;
 }
 
-void UPushAbilitySystemComponent::ServerSideInit(bool bApplyInitialEffects)
+void UPushAbilitySystemComponent::ServerSideInit()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
@@ -68,16 +69,16 @@ void UPushAbilitySystemComponent::ServerSideInit(bool bApplyInitialEffects)
 	BindHealthAttributeDelegate();
 	BindManaAttributeDelegate();
 
-	const bool bShouldApplyInitialEffects = bApplyInitialEffects && HasInitialEffects();
-	ValidateConfiguredDataOnce(bApplyInitialEffects);
+	ValidateConfiguredDataOnce();
 
-	const bool bBaseAttributesInitialized = bShouldApplyInitialEffects ? false : InitializeBaseAttributes();
+	const bool bConfiguredStartupEffectsApplied = HasStartupEffects() && ApplyConfiguredStartupEffects();
+	const bool bBaseAttributesInitialized = bConfiguredStartupEffectsApplied ? false : InitializeBaseAttributes();
 
-	ApplyStartupEffects(bBaseAttributesInitialized, bShouldApplyInitialEffects);
+	ApplyPostStartupEffects(bConfiguredStartupEffectsApplied || bBaseAttributesInitialized);
 	GiveInitialAbilities();
 }
 
-void UPushAbilitySystemComponent::ApplyStartupEffects(bool bBaseAttributesInitialized, bool bApplyInitialEffects)
+void UPushAbilitySystemComponent::ApplyPostStartupEffects(bool bStartupAttributesInitialized)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 		return;
@@ -85,33 +86,45 @@ void UPushAbilitySystemComponent::ApplyStartupEffects(bool bBaseAttributesInitia
 	if (bStartupEffectsApplied)
 		return;
 
-	const bool bInitialEffectsApplied = bApplyInitialEffects && ApplyInitialEffects();
-	if (bBaseAttributesInitialized || bInitialEffectsApplied)
+	if (!AbilitySystemGenerics)
+		return;
+
+	if (bStartupAttributesInitialized)
 	{
-		AuthApplyGameplayEffect(GetFullStatEffect());
-		AuthApplyGameplayEffect(GetHealthRegenEffect());
-		AuthApplyGameplayEffect(GetManaRegenEffect());
-		AuthApplyGameplayEffect(GetAddHeroTagEffect());
+		AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
+
+		if (HasHeroAttributes())
+		{
+			AuthApplyGameplayEffect(AbilitySystemGenerics->GetHealthRegenEffect());
+			AuthApplyGameplayEffect(AbilitySystemGenerics->GetManaRegenEffect());
+			AuthApplyGameplayEffect(AbilitySystemGenerics->GetAddHeroTagEffect());
+		}
 	}
 
 	bStartupEffectsApplied = true;
 }
 
-bool UPushAbilitySystemComponent::HasInitialEffects() const
+bool UPushAbilitySystemComponent::HasStartupEffects() const
 {
-	return InitialEffects.ContainsByPredicate(
-		[](const TSubclassOf<UGameplayEffect>& EffectClass)
+	const TSubclassOf<UGameplayEffect> FullStatEffect = AbilitySystemGenerics
+		? AbilitySystemGenerics->GetFullStatEffect()
+		: nullptr;
+
+	return StartupEffects.ContainsByPredicate(
+		[FullStatEffect](const TSubclassOf<UGameplayEffect>& EffectClass)
 		{
-			return EffectClass != nullptr;
+			return EffectClass != nullptr && EffectClass != FullStatEffect;
 		});
 }
 
-bool UPushAbilitySystemComponent::ApplyInitialEffects()
+bool UPushAbilitySystemComponent::ApplyConfiguredStartupEffects()
 {
 	bool bAppliedAnyEffect = false;
-	const TSubclassOf<UGameplayEffect> FullStatEffect = GetFullStatEffect();
+	const TSubclassOf<UGameplayEffect> FullStatEffect = AbilitySystemGenerics
+		? AbilitySystemGenerics->GetFullStatEffect()
+		: nullptr;
 
-	for (const TSubclassOf<UGameplayEffect>& EffectClass : InitialEffects)
+	for (const TSubclassOf<UGameplayEffect>& EffectClass : StartupEffects)
 	{
 		if (!EffectClass || EffectClass == FullStatEffect)
 		{
@@ -123,6 +136,11 @@ bool UPushAbilitySystemComponent::ApplyInitialEffects()
 	}
 
 	return bAppliedAnyEffect;
+}
+
+bool UPushAbilitySystemComponent::HasHeroAttributes() const
+{
+	return HasAttributeSetForAttribute(UPushHeroAttributeSet::GetStrengthAttribute());
 }
 
 void UPushAbilitySystemComponent::GiveInitialAbilities()
@@ -142,7 +160,21 @@ void UPushAbilitySystemComponent::GiveInitialAbilities()
 		}
 	}
 
-	for (const auto& AbilityClass : PassiveAbilities)
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : PassiveAbilities)
+	{
+		if (AbilityClass)
+		{
+			GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, nullptr));
+		}
+	}
+
+	if (!AbilitySystemGenerics)
+	{
+		bInitialAbilitiesGranted = true;
+		return;
+	}
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : AbilitySystemGenerics->GetDefaultAbilities())
 	{
 		if (AbilityClass)
 		{
@@ -181,7 +213,10 @@ void UPushAbilitySystemComponent::BindManaAttributeDelegate()
 
 void UPushAbilitySystemComponent::ApplyFullStatEffect()
 {
-	AuthApplyGameplayEffect(GetFullStatEffect());
+	if (AbilitySystemGenerics)
+	{
+		AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
+	}
 }
 
 void UPushAbilitySystemComponent::RemoveTransientEffectsForDeath()
@@ -218,11 +253,10 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 	if (!DefaultsSource || DefaultsSource == this)
 		return;
 
-	GameplayEffects = DefaultsSource->GameplayEffects;
-	InitialEffects = DefaultsSource->InitialEffects;
 	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
 	PassiveAbilities = DefaultsSource->PassiveAbilities;
-	BaseStatsData = DefaultsSource->BaseStatsData;
+	StartupEffects = DefaultsSource->StartupEffects;
+	AbilitySystemGenerics = DefaultsSource->AbilitySystemGenerics;
 }
 
 const TMap<EAbilityInputID, FPushInputActivatedAbility>& UPushAbilitySystemComponent::GetInputActivatedAbilities() const
@@ -260,48 +294,6 @@ TArray<FPushInputActivatedAbilityDisplayData> UPushAbilitySystemComponent::GetDi
 	return DisplayAbilities;
 }
 
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetGameplayEffect(
-	EPushGameplayEffectID GameplayEffectID) const
-{
-	const FPushGameplayEffect* GameplayEffect = GameplayEffects.FindByPredicate(
-		[GameplayEffectID](const FPushGameplayEffect& Effect)
-		{
-			return Effect.EffectID == GameplayEffectID;
-		});
-
-	if (GameplayEffect)
-	{
-		return GameplayEffect->EffectClass;
-	}
-
-	return nullptr;
-}
-
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetDeathEffect() const
-{
-	return GetGameplayEffect(EPushGameplayEffectID::Death);
-}
-
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetFullStatEffect() const
-{
-	return GetGameplayEffect(EPushGameplayEffectID::FullStat);
-}
-
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetHealthRegenEffect() const
-{
-	return GetGameplayEffect(EPushGameplayEffectID::HealthRegen);
-}
-
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetManaRegenEffect() const
-{
-	return GetGameplayEffect(EPushGameplayEffectID::ManaRegen);
-}
-
-TSubclassOf<UGameplayEffect> UPushAbilitySystemComponent::GetAddHeroTagEffect() const
-{
-	return GetGameplayEffect(EPushGameplayEffectID::AddHeroTag);
-}
-
 bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 {
 	bool bIsValid = true;
@@ -309,35 +301,44 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 	bool bHasConfiguredAbility = false;
 	const FString ValidationContext = GetValidationContext();
 
-	for (const FPushGameplayEffect& GameplayEffect : GameplayEffects)
+	if (!AbilitySystemGenerics)
 	{
-		if (EffectIDs.Contains(GameplayEffect.EffectID))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("%s has duplicate GameplayEffect entry for id %d."),
-				*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
-			bIsValid = false;
-		}
-
-		EffectIDs.Add(GameplayEffect.EffectID);
-
-		if (!GameplayEffect.EffectClass)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("%s has a null GameplayEffect entry for id %d."),
-				*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
-			bIsValid = false;
-		}
-	}
-
-	if (!GetDeathEffect())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is missing the Death gameplay effect."), *ValidationContext);
+		UE_LOG(LogTemp, Warning, TEXT("%s has no AbilitySystemGenerics data asset configured."), *ValidationContext);
 		bIsValid = false;
 	}
 
-	if (!GetFullStatEffect())
+	if (AbilitySystemGenerics)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *ValidationContext);
-		bIsValid = false;
+		for (const FPushGameplayEffect& GameplayEffect : AbilitySystemGenerics->GetGameplayEffects())
+		{
+			if (EffectIDs.Contains(GameplayEffect.EffectID))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s has duplicate GameplayEffect entry for id %d."),
+					*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
+				bIsValid = false;
+			}
+
+			EffectIDs.Add(GameplayEffect.EffectID);
+
+			if (!GameplayEffect.EffectClass)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s has a null GameplayEffect entry for id %d."),
+					*ValidationContext, static_cast<int32>(GameplayEffect.EffectID));
+				bIsValid = false;
+			}
+		}
+
+		if (!AbilitySystemGenerics->GetDeathEffect())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s is missing the Death gameplay effect."), *ValidationContext);
+			bIsValid = false;
+		}
+
+		if (!AbilitySystemGenerics->GetFullStatEffect())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *ValidationContext);
+			bIsValid = false;
+		}
 	}
 
 	for (const auto& AbilityPair : InputActivatedAbilities)
@@ -365,12 +366,37 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 	{
 		if (!AbilityClass)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%s has a null default ability."), *ValidationContext);
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null passive ability."), *ValidationContext);
 			bIsValid = false;
 		}
 		else
 		{
 			bHasConfiguredAbility = true;
+		}
+	}
+
+	for (const TSubclassOf<UGameplayEffect>& EffectClass : StartupEffects)
+	{
+		if (!EffectClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s has a null startup effect."), *ValidationContext);
+			bIsValid = false;
+		}
+	}
+
+	if (AbilitySystemGenerics)
+	{
+		for (const TSubclassOf<UGameplayAbility>& AbilityClass : AbilitySystemGenerics->GetDefaultAbilities())
+		{
+			if (!AbilityClass)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s has a null default ability."), *ValidationContext);
+				bIsValid = false;
+			}
+			else
+			{
+				bHasConfiguredAbility = true;
+			}
 		}
 	}
 
@@ -383,7 +409,7 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 	return bIsValid;
 }
 
-bool UPushAbilitySystemComponent::ValidateConfiguredDataOnce(bool bApplyInitialEffects)
+bool UPushAbilitySystemComponent::ValidateConfiguredDataOnce()
 {
 	if (bConfiguredDataValidated)
 	{
@@ -392,15 +418,14 @@ bool UPushAbilitySystemComponent::ValidateConfiguredDataOnce(bool bApplyInitialE
 
 	bConfiguredDataValidated = true;
 	const bool bConfiguredDataValidNow = ValidateConfiguredData();
-	const bool bStartupConfigurationValid = ValidateStartupConfiguration(bApplyInitialEffects);
+	const bool bStartupConfigurationValid = ValidateStartupConfiguration();
 	bConfiguredDataValid = bConfiguredDataValidNow && bStartupConfigurationValid;
 	return bConfiguredDataValid;
 }
 
-bool UPushAbilitySystemComponent::ValidateStartupConfiguration(bool bApplyInitialEffects) const
+bool UPushAbilitySystemComponent::ValidateStartupConfiguration() const
 {
-	const bool bHasValidInitialEffect = bApplyInitialEffects && HasInitialEffects();
-	const bool bBaseAttributesExpected = !bHasValidInitialEffect;
+	const bool bBaseAttributesExpected = !HasStartupEffects();
 	const AActor* StatsActor = GetAvatarActor() ? GetAvatarActor() : GetOwner();
 
 	return ValidateBaseStatsConfiguration(bBaseAttributesExpected, StatsActor);
@@ -414,7 +439,14 @@ bool UPushAbilitySystemComponent::ValidateBaseStatsConfiguration(bool bBaseAttri
 	}
 
 	const FString ValidationContext = GetValidationContext();
-	if (!BaseStatsData)
+	if (!AbilitySystemGenerics)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s expects AbilitySystemGenerics for startup attributes, but none is configured."),
+			*ValidationContext);
+		return false;
+	}
+
+	if (!AbilitySystemGenerics->GetBaseDataTable())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s expects BaseStatsData for startup attributes, but none is configured."),
 			*ValidationContext);
@@ -442,11 +474,12 @@ bool UPushAbilitySystemComponent::ValidateBaseStatsConfiguration(bool bBaseAttri
 
 const FHeroBaseStats* UPushAbilitySystemComponent::FindBaseStatsForActor(const AActor* StatsActor) const
 {
-	if (!BaseStatsData || !StatsActor)
+	if (!AbilitySystemGenerics || !AbilitySystemGenerics->GetBaseDataTable() || !StatsActor)
 	{
 		return nullptr;
 	}
 
+	const UDataTable* BaseStatsData = AbilitySystemGenerics->GetBaseDataTable();
 	for (const auto& DataPair : BaseStatsData->GetRowMap())
 	{
 		const FHeroBaseStats* BaseStats = BaseStatsData->FindRow<FHeroBaseStats>(DataPair.Key, "");
@@ -503,10 +536,13 @@ void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& Ch
 		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Health_Empty))
 		{
 			AddLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
-			if (GetDeathEffect())
+			const TSubclassOf<UGameplayEffect> DeathEffect = AbilitySystemGenerics
+				? AbilitySystemGenerics->GetDeathEffect()
+				: nullptr;
+			if (DeathEffect)
 			{
 				RemoveTransientEffectsForDeath();
-				AuthApplyGameplayEffect(GetDeathEffect());
+				AuthApplyGameplayEffect(DeathEffect);
 
 				FGameplayEventData DeadAbilityEventData;
 				if (ChangeData.GEModData)
@@ -598,7 +634,9 @@ bool UPushAbilitySystemComponent::ShouldPersistActiveEffectThroughDeath(const FA
 		return true;
 	}
 
-	const TSubclassOf<UGameplayEffect> DeathEffectClass = GetDeathEffect();
+	const TSubclassOf<UGameplayEffect> DeathEffectClass = AbilitySystemGenerics
+		? AbilitySystemGenerics->GetDeathEffect()
+		: nullptr;
 	return DeathEffectClass
 		&& ActiveEffect.Spec.Def
 		&& ActiveEffect.Spec.Def->GetClass()->IsChildOf(DeathEffectClass);

@@ -29,11 +29,6 @@ bool AMinion::IsActive() const
 	return bIsActiveInPool;
 }
 
-bool AMinion::ShouldApplyInitialEffects() const
-{
-	return true;
-}
-
 void AMinion::Activate()
 {
 	RespawnImmediately();

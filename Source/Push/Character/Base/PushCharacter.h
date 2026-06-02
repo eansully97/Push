@@ -37,7 +37,6 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool UsesPlayerStateAbilitySystem() const;
-	virtual bool ShouldApplyInitialEffects() const;
 	
 	/*
 	 *	GAS

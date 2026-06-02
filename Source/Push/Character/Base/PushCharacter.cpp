@@ -116,11 +116,6 @@ bool APushCharacter::UsesPlayerStateAbilitySystem() const
 	return false;
 }
 
-bool APushCharacter::ShouldApplyInitialEffects() const
-{
-	return false;
-}
-
 void APushCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -184,7 +179,7 @@ void APushCharacter::InitializeAbilitySystem()
 
 	if (HasAuthority())
 	{
-		ActiveAbilitySystemComponent->ServerSideInit(ShouldApplyInitialEffects());
+		ActiveAbilitySystemComponent->ServerSideInit();
 	}
 
 	BindChangeDelegates();
