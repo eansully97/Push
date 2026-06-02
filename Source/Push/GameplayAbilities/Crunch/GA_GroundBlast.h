@@ -8,6 +8,8 @@
 #include "GA_GroundBlast.generated.h"
 
 class ATargetActor_GroundPick;
+class APlayerController;
+class UCameraShakeBase;
 /**
  * 
  */
@@ -30,12 +32,20 @@ private:
 	bool HasValidGroundBlastConfig() const;
 	bool TryGetValidatedTargetLocation(const FGameplayAbilityTargetDataHandle& TargetDataHandle, FVector& OutTargetLocation) const;
 	FGameplayAbilityTargetDataHandle BuildServerTargetData(const FVector& TargetLocation) const;
+	APlayerController* GetLocalPlayerController() const;
+	void PlayLocalCameraShake() const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	FGenericDamageEffectDef DamageEffectDef;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Cue")
 	FGameplayTag GameplayCueTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera Shake")
+	TSubclassOf<UCameraShakeBase> CameraShakeClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera Shake", meta = (ClampMin = "0.0"))
+	float CameraShakeScale = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Targeting")
 	float TargetAreaRadius = 300.f;

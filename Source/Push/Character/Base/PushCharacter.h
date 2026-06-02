@@ -46,14 +46,12 @@ public:
 	UAbilitySystemComponent* GetActivePushAbilitySystemComponent() const;
 
 	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
-
-	void MoveSpeedUpdated(const FOnAttributeChangeData& Data);
 	 
 private:
 	void ApplyMoveSpeed(float NewMoveSpeed);
 	void SyncMoveSpeedFromAttribute();
 
-	FDelegateHandle MoveSpeedChangedDelegateHandle;
+
 	void InitializeAbilitySystem();
 	UPushAbilitySystemComponent* ResolvePlayerStateAbilitySystemComponent() const;
 	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
@@ -67,6 +65,9 @@ private:
 	void StealthTagUpdated(const FGameplayTag Tag, int32 Count);
 	void AimingTagUpdated(const FGameplayTag Tag, int32 Count);
 	void SetIsAiming(bool bIsAiming);
+	void MoveSpeedUpdated(const FOnAttributeChangeData& Data);
+	void MaxHealthUpdated(const FOnAttributeChangeData& Data);
+	void MaxManaUpdated(const FOnAttributeChangeData& Data);
 	virtual void OnAimStateChanged(bool bIsAiming);
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
@@ -88,6 +89,9 @@ private:
 	FDelegateHandle StunTagDelegateHandle;
 	FDelegateHandle StealthTagDelegateHandle;
 	FDelegateHandle AimingTagDelegateHandle;
+	FDelegateHandle MoveSpeedChangedDelegateHandle;
+	FDelegateHandle MaxHealthChangedDelegateHandle;
+	FDelegateHandle MaxManaChangedDelegateHandle;
 
 	/*
 	*	OverheadWidget

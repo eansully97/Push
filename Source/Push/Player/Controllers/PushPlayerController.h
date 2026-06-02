@@ -18,6 +18,10 @@ class PUSH_API APushPlayerController : public APlayerController, public IGeneric
 {
 	GENERATED_BODY()
 public:
+	APushPlayerController();
+
+	virtual void SpawnPlayerCameraManager() override;
+
 	// Only called on server
 	virtual void OnPossess(APawn* InPawn) override;
 	// Only called on client and listening server

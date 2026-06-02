@@ -50,12 +50,24 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 	SetNumericAttributeBase(UPushAttributeSet::GetSpellResistAttribute(), BaseStats->BaseSpellResist);
 	SetNumericAttributeBase(UPushAttributeSet::GetMoveSpeedAttribute(), BaseStats->BaseMoveSpeed);
 
-	if (HasAttributeSetForAttribute(UPushHeroAttributeSet::GetStrengthAttribute()))
+	if (HasHeroAttributes())
 	{
 		SetNumericAttributeBase(UPushHeroAttributeSet::GetStrengthAttribute(), BaseStats->Strength);
 		SetNumericAttributeBase(UPushHeroAttributeSet::GetIntelligenceAttribute(), BaseStats->Intelligence);
 		SetNumericAttributeBase(UPushHeroAttributeSet::GetStrengthGrowthRateAttribute(), BaseStats->StrengthGrowthRate);
 		SetNumericAttributeBase(UPushHeroAttributeSet::GetIntelligenceGrowthRateAttribute(), BaseStats->IntelligenceGrowthRate);
+
+		const FRealCurve* ExperienceCurve = AbilitySystemGenerics->GetExperienceCurve();
+		if (ExperienceCurve && ExperienceCurve->GetNumKeys() > 0)
+		{
+			int32 MaxLevel = ExperienceCurve->GetNumKeys();
+			SetNumericAttributeBase(UPushHeroAttributeSet::GetMaxLevelAttribute(), MaxLevel);
+		
+			float MaxEXP = ExperienceCurve->GetKeyValue(ExperienceCurve->GetLastKeyHandle());
+			SetNumericAttributeBase(UPushHeroAttributeSet::GetMaxLevelExperienceAttribute(), MaxEXP);
+		}
+
+		ExperienceUpdated(FOnAttributeChangeData());
 	}
 
 	return true;
@@ -68,6 +80,10 @@ void UPushAbilitySystemComponent::ServerSideInit()
 
 	BindHealthAttributeDelegate();
 	BindManaAttributeDelegate();
+	if (HasHeroAttributes())
+	{
+		BindExperienceAttributeDelegate();
+	}
 
 	ValidateConfiguredDataOnce();
 
@@ -91,14 +107,14 @@ void UPushAbilitySystemComponent::ApplyPostStartupEffects(bool bStartupAttribute
 
 	if (bStartupAttributesInitialized)
 	{
-		AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
-
 		if (HasHeroAttributes())
 		{
 			AuthApplyGameplayEffect(AbilitySystemGenerics->GetHealthRegenEffect());
 			AuthApplyGameplayEffect(AbilitySystemGenerics->GetManaRegenEffect());
 			AuthApplyGameplayEffect(AbilitySystemGenerics->GetAddHeroTagEffect());
+			AuthApplyGameplayEffect(AbilitySystemGenerics->GetLevelStatsEffect());
 		}
+		AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
 	}
 
 	bStartupEffectsApplied = true;
@@ -211,6 +227,19 @@ void UPushAbilitySystemComponent::BindManaAttributeDelegate()
 	bManaAttributeDelegateBound = true;
 }
 
+void UPushAbilitySystemComponent::BindExperienceAttributeDelegate()
+{
+	if (bExperienceAttributeDelegateBound)
+	{
+		return;
+	}
+
+	ExperienceAttributeChangedDelegateHandle =
+		GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetExperienceAttribute())
+		.AddUObject(this, &ThisClass::ExperienceUpdated);
+	bExperienceAttributeDelegateBound = true;
+}
+
 void UPushAbilitySystemComponent::ApplyFullStatEffect()
 {
 	if (AbilitySystemGenerics)
@@ -294,6 +323,17 @@ TArray<FPushInputActivatedAbilityDisplayData> UPushAbilitySystemComponent::GetDi
 	return DisplayAbilities;
 }
 
+bool UPushAbilitySystemComponent::IsAtMaxLevel() const
+{
+	bool bFoundCurrentLevel = false;
+	float CurrentLevel = GetGameplayAttributeValue(UPushHeroAttributeSet::GetLevelAttribute(), bFoundCurrentLevel);
+
+	bool bFoundMaxLevel = false;
+	float MaxLevel = GetGameplayAttributeValue(UPushHeroAttributeSet::GetMaxLevelAttribute(), bFoundMaxLevel);
+
+	return bFoundCurrentLevel && bFoundMaxLevel && MaxLevel > 0.f && CurrentLevel >= MaxLevel;
+}
+
 bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 {
 	bool bIsValid = true;
@@ -337,6 +377,12 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 		if (!AbilitySystemGenerics->GetFullStatEffect())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%s is missing the FullStat gameplay effect."), *ValidationContext);
+			bIsValid = false;
+		}
+
+		if (HasHeroAttributes() && !AbilitySystemGenerics->GetLevelStatsEffect())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s is missing the LevelStats gameplay effect."), *ValidationContext);
 			bIsValid = false;
 		}
 	}
@@ -587,6 +633,57 @@ void UPushAbilitySystemComponent::ManaUpdated(const FOnAttributeChangeData& Chan
 			RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
 		}
 	}
+}
+
+void UPushAbilitySystemComponent::ExperienceUpdated(const FOnAttributeChangeData& ChangeData)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+		return;
+
+	if (!HasHeroAttributes())
+		return;
+
+	if (IsAtMaxLevel())
+		return;
+
+	if (!AbilitySystemGenerics)
+		return;
+
+	float CurrentExp = ChangeData.NewValue;
+	const FRealCurve* ExperienceCurve = AbilitySystemGenerics->GetExperienceCurve();
+	if (!ExperienceCurve)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NO XP DATA"))
+		return;
+	}
+
+	float PrevLevelExp = 0.f;
+	float NextLevelExp = 0.f;
+	float NewLevel = 1.f;
+
+	for (auto Iter = ExperienceCurve->GetKeyHandleIterator(); Iter; ++Iter)
+	{
+		float ExperienceToReachLevel = ExperienceCurve->GetKeyValue(*Iter);
+		if (CurrentExp < ExperienceToReachLevel)
+		{
+			NextLevelExp = ExperienceToReachLevel;
+			break;
+		}
+
+		PrevLevelExp = ExperienceToReachLevel;
+		NewLevel = Iter.GetIndex() + 1;
+	}
+
+	float CurrentLevel = GetNumericAttributeBase(UPushHeroAttributeSet::GetLevelAttribute());
+	float CurrentUpgradePoint = GetNumericAttributeBase(UPushHeroAttributeSet::GetUpgradePointAttribute());
+
+	float LevelUpgraded = NewLevel - CurrentLevel;
+	float NewUpgradePoint = CurrentUpgradePoint + LevelUpgraded;
+
+	SetNumericAttributeBase(UPushHeroAttributeSet::GetLevelAttribute(), NewLevel);
+	SetNumericAttributeBase(UPushHeroAttributeSet::GetPrevLevelExperienceAttribute(), PrevLevelExp);
+	SetNumericAttributeBase(UPushHeroAttributeSet::GetNextLevelExperienceAttribute(), NextLevelExp);
+	SetNumericAttributeBase(UPushHeroAttributeSet::GetUpgradePointAttribute(), NewUpgradePoint);
 }
 
 void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level)

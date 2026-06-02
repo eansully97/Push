@@ -3,10 +3,21 @@
 
 #include "PushPlayerController.h"
 
+#include "Push/Player/Camera/PushPlayerCameraManager.h"
 #include "Push/Player/Characters/PushPlayerCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Push/Widgets/HUD/GameplayWidget.h"
 
+APushPlayerController::APushPlayerController()
+{
+	PlayerCameraManagerClass = APushPlayerCameraManager::StaticClass();
+}
+
+void APushPlayerController::SpawnPlayerCameraManager()
+{
+	PlayerCameraManagerClass = APushPlayerCameraManager::StaticClass();
+	Super::SpawnPlayerCameraManager();
+}
 
 void APushPlayerController::OnPossess(APawn* InPawn)
 {

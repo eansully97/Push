@@ -25,7 +25,7 @@ public:
 	void InitializeDefaultsFrom(const UPushAbilitySystemComponent* DefaultsSource);
 	const TMap<EAbilityInputID, FPushInputActivatedAbility>& GetInputActivatedAbilities() const;
 	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
-
+	bool IsAtMaxLevel() const;
 	bool ValidateConfiguredData() const;
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
@@ -35,6 +35,7 @@ private:
 	void GiveInitialAbilities();
 	void BindHealthAttributeDelegate();
 	void BindManaAttributeDelegate();
+	void BindExperienceAttributeDelegate();
 	bool ValidateConfiguredDataOnce();
 	bool ValidateStartupConfiguration() const;
 	bool ValidateBaseStatsConfiguration(bool bBaseAttributesExpected, const AActor* StatsActor) const;
@@ -45,6 +46,7 @@ private:
 	bool HasHeroAttributes() const;
 	void HealthUpdated(const FOnAttributeChangeData& ChangeData);
 	void ManaUpdated(const FOnAttributeChangeData& ChangeData);
+	void ExperienceUpdated(const FOnAttributeChangeData& ChangeData);
 	void AuthApplyGameplayEffect(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level = 1);
 	bool ShouldAbilityActivationBreakStealth(const FGameplayAbilitySpecHandle Handle, const UGameplayAbility* Ability) const;
 	bool ShouldPersistActiveEffectThroughDeath(const FActiveGameplayEffect& ActiveEffect) const;
@@ -67,6 +69,8 @@ private:
 	bool bConfiguredDataValid = false;
 	bool bHealthAttributeDelegateBound = false;
 	bool bManaAttributeDelegateBound = false;
+	bool bExperienceAttributeDelegateBound = false;
 	FDelegateHandle HealthAttributeChangedDelegateHandle;
 	FDelegateHandle ManaAttributeChangedDelegateHandle;
+	FDelegateHandle ExperienceAttributeChangedDelegateHandle;
 };

@@ -319,15 +319,33 @@ void APushPlayerCharacter::OnAimStateChanged(bool bIsAiming)
 void APushPlayerCharacter::LerpCameraToLocalOffset(const FVector& Goal)
 {
 	GetWorldTimerManager().ClearTimer(CameraLerpTimerHandle);
-	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::TickCameraLocalOffset, Goal));
+
+	if (!ViewCamera || CameraLerpSpeed <= 0.f)
+	{
+		if (ViewCamera)
+		{
+			ViewCamera->SetRelativeLocation(Goal);
+		}
+		return;
+	}
+
+	const int32 LerpGeneration = ++CameraLerpGeneration;
+	CameraLerpTimerHandle = GetWorldTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateUObject(this, &ThisClass::TickCameraLocalOffset, Goal, LerpGeneration));
 }
 
-void APushPlayerCharacter::TickCameraLocalOffset(FVector Goal)
+void APushPlayerCharacter::TickCameraLocalOffset(FVector Goal, int32 LerpGeneration)
 {
+	if (LerpGeneration != CameraLerpGeneration || !ViewCamera)
+	{
+		return;
+	}
+
 	FVector CurrentLocalOffset = ViewCamera->GetRelativeLocation();
 	if (FVector::Dist(CurrentLocalOffset, Goal) < 1.f)
 	{
-		ViewCamera->SetRelativeLocation(CurrentLocalOffset);
+		ViewCamera->SetRelativeLocation(Goal);
+		CameraLerpTimerHandle.Invalidate();
 		return;
 	}
 
@@ -335,7 +353,8 @@ void APushPlayerCharacter::TickCameraLocalOffset(FVector Goal)
 	FVector NewLocalOffset = FMath::Lerp(CurrentLocalOffset, Goal, LerpAlpha);
 	ViewCamera->SetRelativeLocation(NewLocalOffset);
 
-	GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::TickCameraLocalOffset, Goal));
+	CameraLerpTimerHandle = GetWorldTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateUObject(this, &ThisClass::TickCameraLocalOffset, Goal, LerpGeneration));
 }
 
 FVector APushPlayerCharacter::GetLookRightDirection() const

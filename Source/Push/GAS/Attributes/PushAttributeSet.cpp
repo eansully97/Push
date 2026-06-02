@@ -40,7 +40,8 @@ void UPushAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 	{
 		const bool bTookDamage = Data.EvaluatedData.Magnitude < 0.f;
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
-		
+		const float CurrentMaxHealth = GetMaxHealth();
+		SetCachedHealthPercent(CurrentMaxHealth > 0.f ? GetHealth() / CurrentMaxHealth : 0.f);
 		if (bTookDamage)
 		{
 			if (UPushAbilitySystemComponent* PushASC = Cast<UPushAbilitySystemComponent>(&Data.Target))
@@ -52,6 +53,30 @@ void UPushAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
+		const float CurrentMaxMana = GetMaxMana();
+		SetCachedManaPercent(CurrentMaxMana > 0.f ? GetMana() / CurrentMaxMana : 0.f);
+	}
+}
+
+void UPushAttributeSet::RescaleHealth()
+{
+	if (!GetOwningActor()->HasAuthority())
+		return;
+
+	if (GetCachedHealthPercent() != 0 && GetHealth() != 0)
+	{
+		SetHealth(GetMaxHealth() * GetCachedHealthPercent());
+	}
+}
+
+void UPushAttributeSet::RescaleMana()
+{
+	if (!GetOwningActor()->HasAuthority())
+		return;
+
+	if (GetCachedManaPercent() != 0 && GetMana() != 0)
+	{
+		SetMana(GetMaxMana() * GetCachedManaPercent());
 	}
 }
 

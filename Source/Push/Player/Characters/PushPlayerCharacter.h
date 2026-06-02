@@ -125,8 +125,9 @@ private:
 	float CameraLerpSpeed = 20.f;
 
 	FTimerHandle CameraLerpTimerHandle;
+	int32 CameraLerpGeneration = 0;
 
 	void LerpCameraToLocalOffset(const FVector& Goal);
-	void TickCameraLocalOffset(FVector Goal);
+	void TickCameraLocalOffset(FVector Goal, int32 LerpGeneration);
 	
 };

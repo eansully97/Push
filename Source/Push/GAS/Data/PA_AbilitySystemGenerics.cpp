@@ -45,6 +45,11 @@ TSubclassOf<UGameplayEffect> UPA_AbilitySystemGenerics::GetAddHeroTagEffect() co
 	return GetGameplayEffect(EPushGameplayEffectID::AddHeroTag);
 }
 
+TSubclassOf<UGameplayEffect> UPA_AbilitySystemGenerics::GetLevelStatsEffect() const
+{
+	return GetGameplayEffect(EPushGameplayEffectID::LevelStats);
+}
+
 const TArray<TSubclassOf<UGameplayAbility>>& UPA_AbilitySystemGenerics::GetDefaultAbilities() const
 {
 	return DefaultAbilities;
@@ -58,4 +63,14 @@ const UDataTable* UPA_AbilitySystemGenerics::GetBaseDataTable() const
 const TArray<FPushGameplayEffect>& UPA_AbilitySystemGenerics::GetGameplayEffects() const
 {
 	return GameplayEffects;
+}
+
+const FRealCurve* UPA_AbilitySystemGenerics::GetExperienceCurve() const
+{
+	if (!ExperienceCurveTable || ExperienceRowName.IsNone())
+	{
+		return nullptr;
+	}
+
+	return ExperienceCurveTable->FindCurve(ExperienceRowName, "");
 }

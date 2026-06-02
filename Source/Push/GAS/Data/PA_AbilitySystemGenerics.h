@@ -21,9 +21,12 @@ public:
 	TSubclassOf<UGameplayEffect> GetHealthRegenEffect() const;
 	TSubclassOf<UGameplayEffect> GetManaRegenEffect() const;
 	TSubclassOf<UGameplayEffect> GetAddHeroTagEffect() const;
+	TSubclassOf<UGameplayEffect> GetLevelStatsEffect() const;
+	
 	const TArray<TSubclassOf<UGameplayAbility>>& GetDefaultAbilities() const;
 	const UDataTable* GetBaseDataTable() const;
 	const TArray<FPushGameplayEffect>& GetGameplayEffects() const;
+	const FRealCurve* GetExperienceCurve() const;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects")
@@ -34,4 +37,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Base Stats")
 	UDataTable* BaseStatsData = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Level")
+	FName ExperienceRowName = "ExperienceNeededToReachLevel";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Level")
+	UCurveTable* ExperienceCurveTable;
 };

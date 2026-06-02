@@ -5,14 +5,17 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemGlobals.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Camera/CameraShakeBase.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Engine/OverlapResult.h"
-#include "GameplayCueManager.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "GenericTeamAgentInterface.h"
 #include "Push/GAS/Targeting/TargetActor_GroundPick.h"
 #include "Push/PushGameplayTags.h"
+#include "UObject/ConstructorHelpers.h"
 
 UGA_GroundBlast::UGA_GroundBlast()
 {
@@ -21,6 +24,12 @@ UGA_GroundBlast::UGA_GroundBlast()
 	SetAssetTags(AssetTags);
 	ActivationOwnedTags.AddTag(PushGameplayTags::Status_Aiming);
 	BlockAbilitiesWithTag.AddTag(PushGameplayTags::Ability);
+
+	static ConstructorHelpers::FClassFinder<UCameraShakeBase> DefaultCameraShakeClass(TEXT("/Game/Push/Cosmetics/CameraShake/CS_Default"));
+	if (DefaultCameraShakeClass.Succeeded())
+	{
+		CameraShakeClass = DefaultCameraShakeClass.Class;
+	}
 }
 
 void UGA_GroundBlast::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -105,19 +114,9 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
 		ASC->ExecuteGameplayCue(GameplayCueTag, CueParams);
-
-		if (CurrentActorInfo && CurrentActorInfo->IsLocallyControlled())
-		{
-			if (AActor* AvatarActor = GetAvatarActorFromActorInfo())
-			{
-				UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
-					AvatarActor,
-					PushGameplayTags::GameplayCue_CameraShake,
-					EGameplayCueEvent::Executed,
-					FGameplayCueParameters());
-			}
-		}
 	}
+
+	PlayLocalCameraShake();
 
 	if (CastAbilityMontage)
 	{
@@ -128,6 +127,34 @@ void UGA_GroundBlast::TargetConfirmed(const FGameplayAbilityTargetDataHandle& Ta
 	}
 
 	K2_EndAbility();
+}
+
+APlayerController* UGA_GroundBlast::GetLocalPlayerController() const
+{
+	if (!CurrentActorInfo || !CurrentActorInfo->IsLocallyControlled())
+	{
+		return nullptr;
+	}
+
+	if (APlayerController* PlayerController = CurrentActorInfo->PlayerController.Get())
+	{
+		return PlayerController;
+	}
+
+	const APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	return AvatarPawn ? Cast<APlayerController>(AvatarPawn->GetController()) : nullptr;
+}
+
+void UGA_GroundBlast::PlayLocalCameraShake() const
+{
+	APlayerController* PlayerController = GetLocalPlayerController();
+	if (!PlayerController || !PlayerController->PlayerCameraManager || !CameraShakeClass)
+	{
+		return;
+	}
+
+	APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
+	CameraManager->StartCameraShake(CameraShakeClass, CameraShakeScale);
 }
 
 void UGA_GroundBlast::TargetCancelled(const FGameplayAbilityTargetDataHandle& TargetDataHandle)

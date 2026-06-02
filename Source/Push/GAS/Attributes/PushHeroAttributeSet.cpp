@@ -15,7 +15,9 @@ void UPushHeroAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePro
 	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, NextLevelExperience, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, Level, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, MaxLevel, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, MaxLevelExperience, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, Gold, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPushHeroAttributeSet, UpgradePoint, COND_None, REPNOTIFY_Always);
 }
 
 void UPushHeroAttributeSet::OnRep_Intelligence(const FGameplayAttributeData& OldValue)
@@ -53,7 +55,17 @@ void UPushHeroAttributeSet::OnRep_MaxLevel(const FGameplayAttributeData& OldValu
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushHeroAttributeSet, MaxLevel, OldValue);
 }
 
+void UPushHeroAttributeSet::OnRep_MaxLevelExperience(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushHeroAttributeSet, MaxLevelExperience, OldValue);
+}
+
 void UPushHeroAttributeSet::OnRep_Gold(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushHeroAttributeSet, Gold, OldValue);
+}
+
+void UPushHeroAttributeSet::OnRep_UpgradePoint(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPushHeroAttributeSet, UpgradePoint, OldValue);
 }

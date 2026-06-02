@@ -128,6 +128,22 @@ void APushCharacter::MoveSpeedUpdated(const FOnAttributeChangeData& Data)
 	ApplyMoveSpeed(Data.NewValue);
 }
 
+void APushCharacter::MaxHealthUpdated(const FOnAttributeChangeData& Data)
+{
+	if (IsValid(ActiveAttributeSet))
+	{
+		ActiveAttributeSet->RescaleHealth();
+	}
+}
+
+void APushCharacter::MaxManaUpdated(const FOnAttributeChangeData& Data)
+{
+	if (IsValid(ActiveAttributeSet))
+	{
+		ActiveAttributeSet->RescaleMana();
+	}
+}
+
 void APushCharacter::ApplyMoveSpeed(float NewMoveSpeed)
 {
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
@@ -269,11 +285,12 @@ void APushCharacter::BindChangeDelegates()
 			.AddUObject(this, &ThisClass::StealthTagUpdated);
 		AimingTagDelegateHandle = ActiveAbilitySystemComponent->RegisterGameplayTagEvent(PushGameplayTags::Status_Aiming)
 			.AddUObject(this, &ThisClass::AimingTagUpdated);
-
-		MoveSpeedChangedDelegateHandle =
-			ActiveAbilitySystemComponent
-				->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMoveSpeedAttribute())
-				.AddUObject(this, &ThisClass::MoveSpeedUpdated);
+		MoveSpeedChangedDelegateHandle = ActiveAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMoveSpeedAttribute())
+			.AddUObject(this, &ThisClass::MoveSpeedUpdated);
+		MaxHealthChangedDelegateHandle = ActiveAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMaxHealthAttribute())
+			.AddUObject(this, &ThisClass::MaxHealthUpdated);
+		MaxManaChangedDelegateHandle = ActiveAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMaxManaAttribute())
+			.AddUObject(this, &ThisClass::MaxManaUpdated);
 
 		SyncMoveSpeedFromAttribute();
 		
@@ -294,6 +311,12 @@ void APushCharacter::ClearChangeDelegates()
 	BoundAbilitySystemComponent
 		->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMoveSpeedAttribute())
 		.Remove(MoveSpeedChangedDelegateHandle);
+	BoundAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMaxHealthAttribute())
+		.Remove(MaxHealthChangedDelegateHandle);
+	BoundAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetMaxManaAttribute())
+		.Remove(MaxManaChangedDelegateHandle);
 
 	BoundAbilitySystemComponent = nullptr;
 }

@@ -23,13 +23,18 @@ class PUSH_API UPushAttributeSet : public UAttributeSet
 public:
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, Health)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MaxHealth)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, CachedHealthPercent)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, Mana)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MaxMana)
+	ATTRIBUTE_ACCESSORS(UPushAttributeSet, CachedManaPercent)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, AttackDamage)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, SpellPower)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, Armor)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, SpellResist)
 	ATTRIBUTE_ACCESSORS(UPushAttributeSet, MoveSpeed)
+	
+	void RescaleHealth();
+	void RescaleMana();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -63,6 +68,12 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_MoveSpeed)
 	FGameplayAttributeData MoveSpeed;
+
+	UPROPERTY()
+	FGameplayAttributeData CachedHealthPercent;
+
+	UPROPERTY()
+	FGameplayAttributeData CachedManaPercent;
 
 	UFUNCTION()
 	void OnRep_Health(const FGameplayAttributeData& LastValue);
