@@ -20,6 +20,7 @@ public:
 	bool InitializeBaseAttributes();
 	void ServerSideInit();
 	void ApplyFullStatEffect();
+	void AuthApplyDeathStatusEffect();
 	void AuthBreakStealth();
 	void RemoveTransientEffectsForDeath();
 	void InitializeDefaultsFrom(const UPushAbilitySystemComponent* DefaultsSource);

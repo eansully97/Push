@@ -125,10 +125,14 @@ public:
 	bool IsDead() const;
 	void RespawnImmediately();
 	
+protected:
+	void Respawn();
+	virtual bool ShouldRespawnOnDeathTagRemoved() const;
+	virtual void OnDeathTagRemovedWithoutRespawn();
+
 private:
 	void StartDeathSequence();
 	void PlayDeathAnimation();
-	void Respawn();
 	void DeathMontageFinished();
 	void SetRagdollEnabled(bool bEnabled);
 	void PrepareMovementAndCollisionForDeath();

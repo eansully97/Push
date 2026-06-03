@@ -7,6 +7,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
 
 AMinion::AMinion()
 {
@@ -29,17 +30,18 @@ bool AMinion::IsActive() const
 	return bIsActiveInPool;
 }
 
-void AMinion::Activate()
-{
-	RespawnImmediately();
-	SetPoolActive(true);
-	ApplyGoalToBlackboard();
-	
-}
-
 void AMinion::Activate(const FTransform& SpawnTransform)
 {
+	const bool bWasDead = IsDead();
+	bIsBarracksActivationInProgress = true;
 	RespawnImmediately();
+
+	if (!bWasDead)
+	{
+		Respawn();
+	}
+
+	bIsBarracksActivationInProgress = false;
 	SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	SetPoolActive(true);
 	ApplyGoalToBlackboard();
@@ -91,6 +93,22 @@ void AMinion::PickMeshForTeamID()
 	if (USkeletalMesh** SkeletalMesh = TeamMeshMap.Find(GetGenericTeamId()))
 	{
 		GetMesh()->SetSkeletalMesh(*SkeletalMesh);
+	}
+}
+
+bool AMinion::ShouldRespawnOnDeathTagRemoved() const
+{
+	return !HasAuthority() || bIsBarracksActivationInProgress;
+}
+
+void AMinion::OnDeathTagRemovedWithoutRespawn()
+{
+	if (HasAuthority())
+	{
+		if (UPushAbilitySystemComponent* ASC = Cast<UPushAbilitySystemComponent>(GetActivePushAbilitySystemComponent()))
+		{
+			ASC->AuthApplyDeathStatusEffect();
+		}
 	}
 }
 

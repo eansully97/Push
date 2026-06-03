@@ -329,7 +329,14 @@ void APushCharacter::DeathTagUpdated(const FGameplayTag Tag, int32 Count)
 	}
 	else
 	{
-		Respawn();
+		if (ShouldRespawnOnDeathTagRemoved())
+		{
+			Respawn();
+		}
+		else
+		{
+			OnDeathTagRemovedWithoutRespawn();
+		}
 	}
 }
 
@@ -565,6 +572,15 @@ void APushCharacter::Respawn()
 	{
 		ActiveAbilitySystemComponent->ApplyFullStatEffect();
 	}
+}
+
+bool APushCharacter::ShouldRespawnOnDeathTagRemoved() const
+{
+	return true;
+}
+
+void APushCharacter::OnDeathTagRemovedWithoutRespawn()
+{
 }
 
 void APushCharacter::DeathMontageFinished()

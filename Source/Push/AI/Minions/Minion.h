@@ -17,7 +17,6 @@ public:
 	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
 
 	bool IsActive() const;
-	void Activate();
 	void Activate(const FTransform& SpawnTransform);
 	void SetGoal(AActor* NewGoal);
 
@@ -31,12 +30,16 @@ private:
 	void PickMeshForTeamID();
 	void ApplyGoalToBlackboard() const;
 
+	virtual bool ShouldRespawnOnDeathTagRemoved() const override;
+	virtual void OnDeathTagRemovedWithoutRespawn() override;
 	virtual void OnDead() override;
 	virtual void OnRespawn() override;
 	virtual void OnRep_TeamID() override;
 
 	UPROPERTY(Replicated)
 	bool bIsActiveInPool = false;
+
+	bool bIsBarracksActivationInProgress = false;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	TMap<FGenericTeamId, USkeletalMesh*> TeamMeshMap;

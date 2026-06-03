@@ -248,6 +248,14 @@ void UPushAbilitySystemComponent::ApplyFullStatEffect()
 	}
 }
 
+void UPushAbilitySystemComponent::AuthApplyDeathStatusEffect()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !AbilitySystemGenerics)
+		return;
+
+	AuthApplyGameplayEffect(AbilitySystemGenerics->GetDeathEffect());
+}
+
 void UPushAbilitySystemComponent::RemoveTransientEffectsForDeath()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
