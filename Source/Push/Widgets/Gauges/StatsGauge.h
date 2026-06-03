@@ -34,7 +34,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	UTexture2D* IconTexture;
 
-	UPROPERTY(EditAnywhere, Category = "Attribute")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
 	FGameplayAttribute Attribute;
 
 	void BindAttribute();
