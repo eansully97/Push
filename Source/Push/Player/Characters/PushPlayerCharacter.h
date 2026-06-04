@@ -61,13 +61,20 @@ private:
 	UInputAction* MoveAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UInputAction* LearnAbilityLeaderAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TMap<EAbilityInputID, UInputAction*> AbilityInputActions;
 
 	bool bSuppressBasicAttackUntilRelease = false;
 	bool bSuppressSecondaryAttackUntilRelease = false;
+
+	bool bIsLearnAbilityLeaderDown = false;
 	
 	void HandleLookInput(const FInputActionValue& ActionValue);
 	void HandleMoveInput(const FInputActionValue& ActionValue);
+	void HandleLearnAbilityLeaderDown(const FInputActionValue& ActionValue);
+	void HandleLearnAbilityLeaderUp(const FInputActionValue& ActionValue);
 	void HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID);
 	
 	UFUNCTION(Server, Reliable, WithValidation)

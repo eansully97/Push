@@ -37,10 +37,14 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
 	FGameplayAttribute Attribute;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	bool bHideIfValueIsZero = false;
+
 	void BindAttribute();
 	void StartAttributeBindingRetry();
 	void StopAttributeBindingRetry();
 	void SetValue(float NewValue);
+	void UpdateVisibilityForValue(float NewValue);
 	void AttributeChanged(const FOnAttributeChangeData& ChangeData);
 	void ClearAttributeBinding();
 	FNumberFormattingOptions FormattingOptions;

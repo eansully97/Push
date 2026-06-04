@@ -88,6 +88,12 @@ void APushPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::HandleMoveInput);
 		}
 
+		if (LearnAbilityLeaderAction)
+		{
+			EnhancedInputComponent->BindAction(LearnAbilityLeaderAction, ETriggerEvent::Started, this, &ThisClass::HandleLearnAbilityLeaderDown);
+			EnhancedInputComponent->BindAction(LearnAbilityLeaderAction, ETriggerEvent::Completed, this, &ThisClass::HandleLearnAbilityLeaderUp);
+		}
+
 		for (const auto& AbilityActionPair : AbilityInputActions)
 		{
 			if (AbilityActionPair.Key == EAbilityInputID::None || !AbilityActionPair.Value)
@@ -118,9 +124,26 @@ void APushPlayerCharacter::HandleMoveInput(const FInputActionValue& ActionValue)
 	AddMovementInput(GetMoveForwardDirection() * InputValue.Y + GetLookRightDirection() * InputValue.X);
 }
 
+void APushPlayerCharacter::HandleLearnAbilityLeaderDown(const FInputActionValue& ActionValue)
+{
+	bIsLearnAbilityLeaderDown = true;
+}
+
+void APushPlayerCharacter::HandleLearnAbilityLeaderUp(const FInputActionValue& ActionValue)
+{
+	bIsLearnAbilityLeaderDown = false;
+}
+
 void APushPlayerCharacter::HandleAbilityInput(const FInputActionValue& ActionValue, EAbilityInputID AbilityInputID)
 {
 	const bool bIsPressed = ActionValue.Get<bool>();
+
+	if (bIsPressed && bIsLearnAbilityLeaderDown)
+	{
+		UpgradeAbilityWithInputID(AbilityInputID);
+		return;
+	}
+	
 	UAbilitySystemComponent* ASC = GetActivePushAbilitySystemComponent();
 	if (!ASC)
 	{

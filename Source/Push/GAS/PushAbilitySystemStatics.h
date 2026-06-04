@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayAbilitySpec.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "PushAbilitySystemStatics.generated.h"
 
@@ -19,4 +20,7 @@ public:
 	static float GetStaticCooldownDurationForAbility(const UGameplayAbility* Ability);
 	static int32 GetStaticCostForAbility(const UGameplayAbility* Ability);
 	static bool IsHero(const AActor* ActorToCheck);
+
+	static bool IsAbilityMaxLevel(const FGameplayAbilitySpec& AbilitySpec);
+	
 };

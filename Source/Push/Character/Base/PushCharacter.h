@@ -46,6 +46,9 @@ public:
 	UAbilitySystemComponent* GetActivePushAbilitySystemComponent() const;
 
 	TArray<FPushInputActivatedAbilityDisplayData> GetDisplayInputActivatedAbilities() const;
+
+protected:
+	void UpgradeAbilityWithInputID(EAbilityInputID AbilityInputID);
 	 
 private:
 	void ApplyMoveSpeed(float NewMoveSpeed);

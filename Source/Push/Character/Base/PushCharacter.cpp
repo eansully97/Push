@@ -791,3 +791,11 @@ TArray<FPushInputActivatedAbilityDisplayData> APushCharacter::GetDisplayInputAct
 
 	return {};
 }
+
+void APushCharacter::UpgradeAbilityWithInputID(EAbilityInputID AbilityInputID)
+{
+	if (UPushAbilitySystemComponent* ASC = ResolveAbilitySystemComponent())
+	{
+		ASC->Server_UpgradeAbilityWithID(AbilityInputID);
+	}
+}

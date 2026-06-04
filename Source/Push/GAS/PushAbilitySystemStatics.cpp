@@ -48,3 +48,8 @@ bool UPushAbilitySystemStatics::IsHero(const AActor* ActorToCheck)
 	}
 	return false;
 }
+
+bool UPushAbilitySystemStatics::IsAbilityMaxLevel(const FGameplayAbilitySpec& AbilitySpec)
+{
+	return AbilitySpec.Level >= 4;
+}

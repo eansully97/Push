@@ -108,6 +108,15 @@ void UStatsGauge::SetValue(float NewValue)
 	{
 		AttributeText->SetText(FText::AsNumber(NewValue, &FormattingOptions));
 	}
+
+	UpdateVisibilityForValue(NewValue);
+}
+
+void UStatsGauge::UpdateVisibilityForValue(float NewValue)
+{
+	SetVisibility(bHideIfValueIsZero && FMath::IsNearlyZero(NewValue)
+		? ESlateVisibility::Collapsed
+		: ESlateVisibility::Visible);
 }
 
 void UStatsGauge::AttributeChanged(const FOnAttributeChangeData& ChangeData)

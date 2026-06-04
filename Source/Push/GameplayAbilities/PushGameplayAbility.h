@@ -22,6 +22,13 @@ public:
 protected:
 	UAnimInstance* GetOwnerAnimInstance() const;
 	
+	virtual bool CanActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayTagContainer* SourceTags = nullptr,
+		const FGameplayTagContainer* TargetTags = nullptr,
+		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	
 	TArray<FHitResult> GetHitResultFromSweepLocationTargetData(
 		const FGameplayAbilityTargetDataHandle& TargetDataHandle,
 		float SphereSweepRadius = 30.f,

@@ -7,9 +7,28 @@
 #include "GameplayEffectExtension.h"
 #include "Push/PushGameplayTags.h"
 #include "Push/GameplayAbilities/Countess/GA_Infiltrate.h"
+#include "Push/GAS/PushAbilitySystemStatics.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
 #include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 #include "Push/GAS/Data/PA_AbilitySystemGenerics.h"
+
+namespace
+{
+	bool IsUpgradeableAbilityInputID(EAbilityInputID InputID)
+	{
+		switch (InputID)
+		{
+		case EAbilityInputID::Ability1:
+		case EAbilityInputID::Ability2:
+		case EAbilityInputID::Ability3:
+		case EAbilityInputID::Ability4:
+		case EAbilityInputID::SecondaryAttack:
+			return true;
+		default:
+			return false;
+		}
+	}
+}
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
 {
@@ -463,6 +482,30 @@ bool UPushAbilitySystemComponent::ValidateConfiguredData() const
 	return bIsValid;
 }
 
+void UPushAbilitySystemComponent::Server_UpgradeAbilityWithID_Implementation(EAbilityInputID InputID)
+{
+	if (!IsUpgradeableAbilityInputID(InputID))
+		return;
+
+	bool bFound = false;
+	float UpgradePoint = GetGameplayAttributeValue(UPushHeroAttributeSet::GetUpgradePointAttribute(), bFound);
+	if (!bFound || UpgradePoint <= 0.0f)
+		return;
+
+	FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromInputID(static_cast<int32>(InputID));
+	if (!AbilitySpec || UPushAbilitySystemStatics::IsAbilityMaxLevel(*AbilitySpec))
+		return;
+
+	SetNumericAttributeBase(UPushHeroAttributeSet::GetUpgradePointAttribute(), UpgradePoint - 1);
+	AbilitySpec->Level += 1;
+	MarkAbilitySpecDirty(*AbilitySpec);
+}
+
+bool UPushAbilitySystemComponent::Server_UpgradeAbilityWithID_Validate(EAbilityInputID InputID)
+{
+	return true;
+}
+
 bool UPushAbilitySystemComponent::ValidateConfiguredDataOnce()
 {
 	if (bConfiguredDataValidated)
@@ -555,6 +598,17 @@ FString UPushAbilitySystemComponent::GetValidationContext() const
 		*GetNameSafe(OwningActor),
 		*GetNameSafe(AvatarActorForContext),
 		AvatarActorForContext ? *GetNameSafe(AvatarActorForContext->GetClass()) : TEXT("None"));
+}
+
+void UPushAbilitySystemComponent::Client_AbilitySpecLevelUpdated_Implementation(FGameplayAbilitySpecHandle Handle,
+	int32 NewLevel)
+{
+	FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(Handle);
+	if (Spec)
+	{
+		Spec->Level = NewLevel;
+		AbilitySpecDirtiedCallbacks.Broadcast(*Spec);
+	}
 }
 
 void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
