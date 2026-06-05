@@ -4,18 +4,27 @@
 #include "AbilityListView.h"
 
 #include "Abilities/GameplayAbility.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
 
-void UAbilityListView::ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities)
+void UAbilityListView::ConfigureAbilities(UPushAbilitySystemComponent* AbilitySystemComponent)
 {
 	ClearListItems();
 	OnEntryWidgetGenerated().RemoveAll(this);
 	OnEntryWidgetGenerated().AddUObject(this, &ThisClass::AbilityGaugeGenerated);
+
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	const TArray<FPushInputActivatedAbilityDisplayData> Abilities =
+		AbilitySystemComponent->GetDisplayInputActivatedAbilities();
 	for (const FPushInputActivatedAbilityDisplayData& AbilityData : Abilities)
 	{
 		if (AbilityData.AbilityClass)
 		{
 			UAbilityListItem* AbilityListItem = NewObject<UAbilityListItem>(this);
-			AbilityListItem->Initialize(AbilityData);
+			AbilityListItem->Initialize(AbilityData, AbilitySystemComponent);
 			AddItem(AbilityListItem);
 		}
 	}

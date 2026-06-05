@@ -65,11 +65,16 @@ void APushPlayerController::SpawnGameplayWidget()
 	if (!IsLocalPlayerController())
 		return;
 
+	if (GameplayWidget)
+	{
+		GameplayWidget->RemoveFromParent();
+		GameplayWidget = nullptr;
+	}
+
 	GameplayWidget = CreateWidget<UGameplayWidget>(this, GameplayWidgetClass);
 
 	if (GameplayWidget)
 	{
 		GameplayWidget->AddToViewport();
-		GameplayWidget->ConfigureAbilities(PushPlayerCharacter->GetDisplayInputActivatedAbilities());
 	}
 }

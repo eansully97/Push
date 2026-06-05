@@ -30,10 +30,9 @@ public:
 	bool ValidateConfiguredData() const;
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_UpgradeAbilityWithID(EAbilityInputID InputID);
-	UFUNCTION(Client, Reliable)
-	void Client_AbilitySpecLevelUpdated(FGameplayAbilitySpecHandle Handle, int32 NewLevel);
 
 	virtual void NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability) override;
+	virtual void OnRep_ActivateAbilities() override;
 
 private:
 	void ApplyPostStartupEffects(bool bStartupAttributesInitialized);

@@ -8,6 +8,7 @@
 #include "Components/TextBlock.h"
 #include "Push/Character/Base/PushCharacter.h"
 #include "TimerManager.h"
+#include "Animation/WidgetAnimation.h"
 
 void UStatsGauge::NativePreConstruct()
 {
@@ -117,6 +118,14 @@ void UStatsGauge::UpdateVisibilityForValue(float NewValue)
 	SetVisibility(bHideIfValueIsZero && FMath::IsNearlyZero(NewValue)
 		? ESlateVisibility::Collapsed
 		: ESlateVisibility::Visible);
+
+	if (GetVisibility() == ESlateVisibility::Visible && bHideIfValueIsZero)
+	{
+		if (BlinkAnim)
+		{
+			PlayAnimation(BlinkAnim, 0.f, 0, EUMGSequencePlayMode::Forward);
+		}
+	}
 }
 
 void UStatsGauge::AttributeChanged(const FOnAttributeChangeData& ChangeData)

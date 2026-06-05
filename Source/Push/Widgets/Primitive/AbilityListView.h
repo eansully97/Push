@@ -8,6 +8,8 @@
 #include "Push/Widgets/Gauges/AbilityGauge.h"
 #include "AbilityListView.generated.h"
 
+class UPushAbilitySystemComponent;
+
 /**
  * 
  */
@@ -16,7 +18,7 @@ class PUSH_API UAbilityListView : public UListView
 {
 	GENERATED_BODY()
 public:
-	void ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities);
+	void ConfigureAbilities(UPushAbilitySystemComponent* AbilitySystemComponent);
 	void AbilityGaugeGenerated(UUserWidget& Widget);
 
 	UPROPERTY(EditAnywhere, Category = "Data")

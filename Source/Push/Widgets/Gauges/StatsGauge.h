@@ -11,6 +11,7 @@
 class UTextBlock;
 class UImage;
 class UAbilitySystemComponent;
+class UWidgetAnimation;
 /**
  * 
  */
@@ -30,6 +31,9 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* AttributeText;
+
+	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
+	UWidgetAnimation* BlinkAnim;
 
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	UTexture2D* IconTexture;

@@ -600,17 +600,6 @@ FString UPushAbilitySystemComponent::GetValidationContext() const
 		AvatarActorForContext ? *GetNameSafe(AvatarActorForContext->GetClass()) : TEXT("None"));
 }
 
-void UPushAbilitySystemComponent::Client_AbilitySpecLevelUpdated_Implementation(FGameplayAbilitySpecHandle Handle,
-	int32 NewLevel)
-{
-	FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(Handle);
-	if (Spec)
-	{
-		Spec->Level = NewLevel;
-		AbilitySpecDirtiedCallbacks.Broadcast(*Spec);
-	}
-}
-
 void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilitySpecHandle Handle, UGameplayAbility* Ability)
 {
 	Super::NotifyAbilityActivated(Handle, Ability);
@@ -618,6 +607,19 @@ void UPushAbilitySystemComponent::NotifyAbilityActivated(const FGameplayAbilityS
 	if (ShouldAbilityActivationBreakStealth(Handle, Ability))
 	{
 		AuthBreakStealth();
+	}
+}
+
+void UPushAbilitySystemComponent::OnRep_ActivateAbilities()
+{
+	Super::OnRep_ActivateAbilities();
+
+	for (const FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
+	{
+		if (AbilitySpec.Ability)
+		{
+			AbilitySpecDirtiedCallbacks.Broadcast(AbilitySpec);
+		}
 	}
 }
 

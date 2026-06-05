@@ -9,7 +9,7 @@
 
 class UStatsGauge;
 class UAbilityListView;
-class UAbilitySystemComponent;
+class UPushAbilitySystemComponent;
 class UValueGauge;
 /**
  * 
@@ -21,10 +21,12 @@ class PUSH_API UGameplayWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-	void ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities);
 
 private:
-	void BindOwnerAbilitySystemComponent();
+	void InitializeFromOwner();
+	bool AreAbilitySpecsReady(
+		const UPushAbilitySystemComponent* AbilitySystemComponent,
+		const TArray<FPushInputActivatedAbilityDisplayData>& Abilities) const;
 	void StartAbilitySystemBindingRetry();
 	void StopAbilitySystemBindingRetry();
 
@@ -38,7 +40,8 @@ private:
 	UAbilityListView* AbilityList;
 
 	UPROPERTY()
-	UAbilitySystemComponent* OwnerAbilitySystemComponent;
+	UPushAbilitySystemComponent* OwnerAbilitySystemComponent;
 
 	FTimerHandle AbilitySystemBindingRetryTimerHandle;
+	bool bAbilityListConfigured = false;
 };

@@ -14,58 +14,126 @@ void UGameplayWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	BindOwnerAbilitySystemComponent();
+	OwnerAbilitySystemComponent = nullptr;
+	bAbilityListConfigured = false;
+	if (AbilityList)
+	{
+		AbilityList->ClearListItems();
+	}
+
+	InitializeFromOwner();
 }
 
 void UGameplayWidget::NativeDestruct()
 {
 	StopAbilitySystemBindingRetry();
+	OwnerAbilitySystemComponent = nullptr;
+	bAbilityListConfigured = false;
 	Super::NativeDestruct();
 }
 
-void UGameplayWidget::ConfigureAbilities(const TArray<FPushInputActivatedAbilityDisplayData>& Abilities)
+void UGameplayWidget::InitializeFromOwner()
 {
-	AbilityList->ConfigureAbilities(Abilities);
-}
-
-void UGameplayWidget::BindOwnerAbilitySystemComponent()
-{
-	UAbilitySystemComponent* CurrentOwnerASC = nullptr;
+	UPushAbilitySystemComponent* CurrentOwnerASC = nullptr;
 	if (const APushCharacter* PushCharacter = Cast<APushCharacter>(GetOwningPlayerPawn()))
 	{
-		CurrentOwnerASC = PushCharacter->GetActivePushAbilitySystemComponent();
+		CurrentOwnerASC = Cast<UPushAbilitySystemComponent>(PushCharacter->GetActivePushAbilitySystemComponent());
 	}
 
 	if (!CurrentOwnerASC)
 	{
+		if (OwnerAbilitySystemComponent)
+		{
+			if (HealthBar)
+			{
+				HealthBar->SetAndBoundToGameplayAttribute(nullptr, FGameplayAttribute(), FGameplayAttribute());
+			}
+			if (ManaBar)
+			{
+				ManaBar->SetAndBoundToGameplayAttribute(nullptr, FGameplayAttribute(), FGameplayAttribute());
+			}
+			if (AbilityList)
+			{
+				AbilityList->ClearListItems();
+			}
+
+			OwnerAbilitySystemComponent = nullptr;
+			bAbilityListConfigured = false;
+		}
+
 		StartAbilitySystemBindingRetry();
 		return;
 	}
 
-	if (OwnerAbilitySystemComponent == CurrentOwnerASC)
+	if (OwnerAbilitySystemComponent != CurrentOwnerASC)
+	{
+		OwnerAbilitySystemComponent = CurrentOwnerASC;
+		bAbilityListConfigured = false;
+
+		if (AbilityList)
+		{
+			AbilityList->ClearListItems();
+		}
+		if (HealthBar)
+		{
+			HealthBar->SetAndBoundToGameplayAttribute(
+				OwnerAbilitySystemComponent,
+				UPushAttributeSet::GetHealthAttribute(),
+				UPushAttributeSet::GetMaxHealthAttribute());
+		}
+		if (ManaBar)
+		{
+			ManaBar->SetAndBoundToGameplayAttribute(
+				OwnerAbilitySystemComponent,
+				UPushAttributeSet::GetManaAttribute(),
+				UPushAttributeSet::GetMaxManaAttribute());
+		}
+	}
+
+	if (!bAbilityListConfigured)
+	{
+		const TArray<FPushInputActivatedAbilityDisplayData> DisplayAbilities =
+			OwnerAbilitySystemComponent->GetDisplayInputActivatedAbilities();
+		if (AreAbilitySpecsReady(OwnerAbilitySystemComponent, DisplayAbilities))
+		{
+			if (AbilityList)
+			{
+				AbilityList->ConfigureAbilities(OwnerAbilitySystemComponent);
+			}
+			bAbilityListConfigured = true;
+		}
+	}
+
+	if (bAbilityListConfigured)
 	{
 		StopAbilitySystemBindingRetry();
-		return;
 	}
-
-	OwnerAbilitySystemComponent = CurrentOwnerASC;
-	if (HealthBar)
+	else
 	{
-		HealthBar->SetAndBoundToGameplayAttribute(
-			OwnerAbilitySystemComponent,
-			UPushAttributeSet::GetHealthAttribute(),
-			UPushAttributeSet::GetMaxHealthAttribute());
+		StartAbilitySystemBindingRetry();
 	}
+}
 
-	if (ManaBar)
+bool UGameplayWidget::AreAbilitySpecsReady(
+	const UPushAbilitySystemComponent* AbilitySystemComponent,
+	const TArray<FPushInputActivatedAbilityDisplayData>& Abilities) const
+{
+	if (!AbilitySystemComponent)
 	{
-		ManaBar->SetAndBoundToGameplayAttribute(
-			OwnerAbilitySystemComponent,
-			UPushAttributeSet::GetManaAttribute(),
-			UPushAttributeSet::GetMaxManaAttribute());
+		return false;
 	}
 
-	StopAbilitySystemBindingRetry();
+	for (const FPushInputActivatedAbilityDisplayData& AbilityData : Abilities)
+	{
+		const FGameplayAbilitySpec* AbilitySpec =
+			AbilitySystemComponent->FindAbilitySpecFromInputID(static_cast<int32>(AbilityData.InputID));
+		if (!AbilitySpec || !AbilitySpec->Ability || AbilitySpec->Ability->GetClass() != AbilityData.AbilityClass)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void UGameplayWidget::StartAbilitySystemBindingRetry()
@@ -79,7 +147,7 @@ void UGameplayWidget::StartAbilitySystemBindingRetry()
 	World->GetTimerManager().SetTimer(
 		AbilitySystemBindingRetryTimerHandle,
 		this,
-		&ThisClass::BindOwnerAbilitySystemComponent,
+		&ThisClass::InitializeFromOwner,
 		0.1f,
 		true);
 }

@@ -9,9 +9,9 @@
 #include "Push/PushGameplayAbilityTypes.h"
 #include "AbilityGauge.generated.h"
 
-class UAbilitySystemComponent;
 class UGameplayAbility;
 class UImage;
+class UPushAbilitySystemComponent;
 class UTextBlock;
 class UTexture2D;
 
@@ -21,11 +21,14 @@ class PUSH_API UAbilityListItem : public UObject
 	GENERATED_BODY()
 
 public:
-	void Initialize(const FPushInputActivatedAbilityDisplayData& InAbilityData);
+	void Initialize(
+		const FPushInputActivatedAbilityDisplayData& InAbilityData,
+		UPushAbilitySystemComponent* InAbilitySystemComponent);
 
 	EAbilityInputID GetInputID() const;
 	TSubclassOf<UGameplayAbility> GetAbilityClass() const;
 	UGameplayAbility* GetAbilityDefaultObject() const;
+	UPushAbilitySystemComponent* GetAbilitySystemComponent() const;
 
 private:
 	UPROPERTY()
@@ -33,6 +36,9 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<UGameplayAbility> AbilityClass;
+
+	UPROPERTY()
+	UPushAbilitySystemComponent* AbilitySystemComponent;
 };
 
 USTRUCT(BlueprintType)
@@ -64,23 +70,31 @@ public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+	virtual void NativeOnEntryReleased() override;
 	void ConfigureWithWidgetData(const FAbilityWidgetData* AbilityWidgetData);
 	void StartCooldown(float CooldownTimeRemaining, float CooldownDuration);
 
 private:
-	UAbilitySystemComponent* ResolveOwnerAbilitySystemComponent() const;
-	void StartCooldownBindingRetry();
-	void StopCooldownBindingRetry();
-	void RetryCooldownBinding();
-
 	UPROPERTY(meta = (BindWidget))
 	UImage* Icon;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* LevelGauge;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	FName IconMaterialParamName = "Icon";
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	FName CooldownPercentParamName = "Percent";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	FName AbilityLevelParamName = "Level";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	FName CanCastParamName = "CanCast";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	FName UpgradePointAvailableName = "UpgradeAvailable";
 
 	UPROPERTY(EditDefaultsOnly, Category = "Cooldown")
 	float CooldownUpdateInterval = 0.1;
@@ -98,7 +112,9 @@ private:
 	UGameplayAbility* AbilityObject;
 
 	UPROPERTY()
-	UAbilitySystemComponent* OwnerAbilitySystemComponent;
+	UPushAbilitySystemComponent* OwnerAbilitySystemComponent;
+
+	EAbilityInputID InputID = EAbilityInputID::None;
 
 	UPROPERTY()
 	float CachedCooldownDuration;
@@ -111,9 +127,17 @@ private:
 
 	FTimerHandle CooldownTimerHandle;
 	FTimerHandle CooldownUpdateTimerHandle;
-	FTimerHandle CooldownBindingRetryTimerHandle;
 	TMap<FGameplayTag, FDelegateHandle> CooldownTagDelegateHandles;
+	FDelegateHandle AbilitySpecDirtiedDelegateHandle;
+	FDelegateHandle UpgradePointChangedDelegateHandle;
 
+	const FGameplayAbilitySpec* GetAbilitySpec() const;
+	void BindAbilityState();
+	void ClearAbilityState();
+	void ResetVisualState();
+	void RefreshFromCurrentState();
+	void RefreshAbilitySpecState();
+	void RefreshUpgradeAvailability();
 	void ClearCooldownTimers();
 	void SetIconTexture(UTexture2D* IconTexture) const;
 	void BindCooldownTagEvents();
@@ -123,4 +147,6 @@ private:
 	bool GetCooldownTimeRemainingAndDuration(float& CooldownTimeRemaining, float& CooldownDuration) const;
 	void CooldownFinished();
 	void UpdateCooldown();
+	void AbilitySpecUpdated(const FGameplayAbilitySpec& AbilitySpec);
+	void UpgradePointUpdated(const FOnAttributeChangeData& Data);
 };
