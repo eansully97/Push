@@ -13,6 +13,7 @@
 #include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 #include "Push/GAS/Components/PushAbilitySystemComponent.h"
 #include "TimerManager.h"
+#include "Push/GAS/Attributes/PushAttributeSet.h"
 
 void UAbilityListItem::Initialize(
 	const FPushInputActivatedAbilityDisplayData& InAbilityData,
@@ -186,6 +187,9 @@ void UAbilityGauge::BindAbilityState()
 		OwnerAbilitySystemComponent
 			->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetUpgradePointAttribute())
 			.AddUObject(this, &ThisClass::UpgradePointUpdated);
+	ManaCostChangedDelegateHandle =
+		OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetManaAttribute())
+		.AddUObject(this, &ThisClass::ManaUpdated);
 	BindCooldownTagEvents();
 }
 
@@ -206,10 +210,17 @@ void UAbilityGauge::ClearAbilityState()
 				->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetUpgradePointAttribute())
 				.Remove(UpgradePointChangedDelegateHandle);
 		}
+		if (ManaCostChangedDelegateHandle.IsValid())
+		{
+			OwnerAbilitySystemComponent
+				->GetGameplayAttributeValueChangeDelegate(UPushAttributeSet::GetManaAttribute())
+				.Remove(ManaCostChangedDelegateHandle);
+		}
 	}
 
 	AbilitySpecDirtiedDelegateHandle.Reset();
 	UpgradePointChangedDelegateHandle.Reset();
+	ManaCostChangedDelegateHandle.Reset();
 	OwnerAbilitySystemComponent = nullptr;
 	AbilityObject = nullptr;
 	InputID = EAbilityInputID::None;
@@ -252,9 +263,22 @@ void UAbilityGauge::RefreshAbilitySpecState()
 	{
 		LevelGauge->GetDynamicMaterial()->SetScalarParameterValue(AbilityLevelParamName, AbilityLevel);
 	}
+
+	UpdateCanCast();
+}
+
+void UAbilityGauge::UpdateCanCast()
+{
+	const FGameplayAbilitySpec* AbilitySpec = GetAbilitySpec();
+	const bool bCanCast =
+		AbilitySpec
+		&& AbilitySpec->Level > 0
+		&& OwnerAbilitySystemComponent
+		&& UPushAbilitySystemStatics::CheckAbilityCost(*AbilitySpec, *OwnerAbilitySystemComponent);
+
 	if (Icon && Icon->GetDynamicMaterial())
 	{
-		Icon->GetDynamicMaterial()->SetScalarParameterValue(CanCastParamName, AbilityLevel > 0 ? 1.f : 0.f);
+		Icon->GetDynamicMaterial()->SetScalarParameterValue(CanCastParamName, bCanCast ? 1.f : 0.f);
 	}
 }
 
@@ -405,9 +429,23 @@ void UAbilityGauge::AbilitySpecUpdated(const FGameplayAbilitySpec& AbilitySpec)
 
 	RefreshAbilitySpecState();
 	RefreshUpgradeAvailability();
+
+	float NewCooldownDuration = UPushAbilitySystemStatics::GetCooldownDurationFor(AbilitySpec.Ability, *OwnerAbilitySystemComponent, AbilitySpec.Level);
+	float NewCost = UPushAbilitySystemStatics::GetManaCostFor(AbilitySpec.Ability, *OwnerAbilitySystemComponent, AbilitySpec.Level);
+
+	FNumberFormattingOptions FormattingOptions;
+	FormattingOptions.MaximumFractionalDigits = 0;
+	
+	CooldownDurationText->SetText(FText::AsNumber(NewCooldownDuration));
+	CostText->SetText(FText::AsNumber(NewCost, &FormattingOptions));
 }
 
 void UAbilityGauge::UpgradePointUpdated(const FOnAttributeChangeData&)
 {
 	RefreshUpgradeAvailability();
+}
+
+void UAbilityGauge::ManaUpdated(const FOnAttributeChangeData&)
+{
+	UpdateCanCast();
 }

@@ -130,6 +130,7 @@ private:
 	TMap<FGameplayTag, FDelegateHandle> CooldownTagDelegateHandles;
 	FDelegateHandle AbilitySpecDirtiedDelegateHandle;
 	FDelegateHandle UpgradePointChangedDelegateHandle;
+	FDelegateHandle ManaCostChangedDelegateHandle;
 
 	const FGameplayAbilitySpec* GetAbilitySpec() const;
 	void BindAbilityState();
@@ -137,6 +138,7 @@ private:
 	void ResetVisualState();
 	void RefreshFromCurrentState();
 	void RefreshAbilitySpecState();
+	void UpdateCanCast();
 	void RefreshUpgradeAvailability();
 	void ClearCooldownTimers();
 	void SetIconTexture(UTexture2D* IconTexture) const;
@@ -149,4 +151,5 @@ private:
 	void UpdateCooldown();
 	void AbilitySpecUpdated(const FGameplayAbilitySpec& AbilitySpec);
 	void UpgradePointUpdated(const FOnAttributeChangeData& Data);
+	void ManaUpdated(const FOnAttributeChangeData& Data);
 };
