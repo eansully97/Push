@@ -28,6 +28,48 @@ namespace
 			return false;
 		}
 	}
+
+	bool AreInputAbilityDefaultsEqual(
+		const TMap<EAbilityInputID, FPushInputActivatedAbility>& Left,
+		const TMap<EAbilityInputID, FPushInputActivatedAbility>& Right)
+	{
+		if (Left.Num() != Right.Num())
+		{
+			return false;
+		}
+
+		for (const TPair<EAbilityInputID, FPushInputActivatedAbility>& LeftPair : Left)
+		{
+			const FPushInputActivatedAbility* RightAbility = Right.Find(LeftPair.Key);
+			if (!RightAbility
+				|| LeftPair.Value.AbilityClass != RightAbility->AbilityClass
+				|| LeftPair.Value.Level != RightAbility->Level)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	template <typename T>
+	bool AreClassArraysEqual(const TArray<TSubclassOf<T>>& Left, const TArray<TSubclassOf<T>>& Right)
+	{
+		if (Left.Num() != Right.Num())
+		{
+			return false;
+		}
+
+		for (int32 Index = 0; Index < Left.Num(); ++Index)
+		{
+			if (Left[Index] != Right[Index])
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
 }
 
 UPushAbilitySystemComponent::UPushAbilitySystemComponent()
@@ -308,6 +350,36 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 {
 	if (!DefaultsSource || DefaultsSource == this)
 		return;
+
+	const bool bAbilityDefaultsChanged =
+		!AreInputAbilityDefaultsEqual(InputActivatedAbilities, DefaultsSource->InputActivatedAbilities)
+		|| !AreClassArraysEqual(PassiveAbilities, DefaultsSource->PassiveAbilities)
+		|| AbilitySystemGenerics != DefaultsSource->AbilitySystemGenerics;
+
+	const bool bStartupDefaultsChanged =
+		!AreClassArraysEqual(StartupEffects, DefaultsSource->StartupEffects)
+		|| AbilitySystemGenerics != DefaultsSource->AbilitySystemGenerics;
+
+	if (bAbilityDefaultsChanged)
+	{
+		if (GetOwner() && GetOwner()->HasAuthority() && bInitialAbilitiesGranted)
+		{
+			ClearAllAbilities();
+		}
+
+		bInitialAbilitiesGranted = false;
+	}
+
+	if (bStartupDefaultsChanged)
+	{
+		bStartupEffectsApplied = false;
+	}
+
+	if (bAbilityDefaultsChanged || bStartupDefaultsChanged)
+	{
+		bConfiguredDataValidated = false;
+		bConfiguredDataValid = false;
+	}
 
 	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
 	PassiveAbilities = DefaultsSource->PassiveAbilities;

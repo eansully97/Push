@@ -6,9 +6,9 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/MeshComponent.h"
-#include "Components/PrimitiveComponent.h"
 #include "Engine/OverlapResult.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -105,6 +105,41 @@ void UGA_CountessExecute::HandleExecuteMontageCancelled()
 	FinishExecute();
 }
 
+void UGA_CountessExecute::HandleExecuteDamageEvent(FGameplayEventData EventData)
+{
+	if (!K2_HasAuthority() || !bExecuting)
+	{
+		return;
+	}
+
+	AActor* ExpectedTarget = ExecutingTarget.Get();
+	if (!ExpectedTarget || !DamageEffectClass)
+	{
+		if (!DamageEffectClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CountessExecute: DamageEffectClass is not set."));
+		}
+		return;
+	}
+
+	const int32 HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(EventData.TargetData);
+	for (int32 Index = 0; Index < HitResultCount; ++Index)
+	{
+		const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(EventData.TargetData, Index);
+		AActor* HitActor = HitResult.GetActor();
+		if (HitActor != ExpectedTarget || !IsValidExecuteTarget(HitActor))
+		{
+			continue;
+		}
+
+		ApplyGameplayEffectToHitResultActor(
+			HitResult,
+			DamageEffectClass,
+			GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
+		return;
+	}
+}
+
 void UGA_CountessExecute::SetupInputWait()
 {
 	if (bExecuting)
@@ -115,6 +150,22 @@ void UGA_CountessExecute::SetupInputWait()
 	UAbilityTask_WaitInputPress* WaitInputPressTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	WaitInputPressTask->OnPress.AddDynamic(this, &ThisClass::HandleInputPressed);
 	WaitInputPressTask->ReadyForActivation();
+}
+
+void UGA_CountessExecute::SetupExecuteDamageWait()
+{
+	if (!K2_HasAuthority())
+	{
+		return;
+	}
+
+	UAbilityTask_WaitGameplayEvent* WaitDamageEventTask =
+		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+			this,
+			PushGameplayTags::GameplayEvent_Ability_Countess_Execute_Damage);
+
+	WaitDamageEventTask->EventReceived.AddDynamic(this, &ThisClass::HandleExecuteDamageEvent);
+	WaitDamageEventTask->ReadyForActivation();
 }
 
 void UGA_CountessExecute::StartLocalOverlayScan()
@@ -520,18 +571,6 @@ bool UGA_CountessExecute::TryTeleportBehindTarget(AActor* TargetActor) const
 	return AvatarActor->TeleportTo(BaseTeleportLocation, TeleportRotation, false, true);
 }
 
-FHitResult UGA_CountessExecute::BuildTargetHitResult(AActor* TargetActor) const
-{
-	AActor* AvatarActor = GetAvatarActorFromActorInfo();
-	UPrimitiveComponent* TargetPrimitive = TargetActor ? Cast<UPrimitiveComponent>(TargetActor->GetRootComponent()) : nullptr;
-	const FVector TargetLocation = TargetActor ? GetTargetAnchorLocation(TargetActor) : FVector::ZeroVector;
-	const FVector HitNormal = AvatarActor && TargetActor
-		? (TargetActor->GetActorLocation() - AvatarActor->GetActorLocation()).GetSafeNormal()
-		: FVector::ForwardVector;
-
-	return FHitResult(TargetActor, TargetPrimitive, TargetLocation, HitNormal);
-}
-
 void UGA_CountessExecute::TryExecuteTarget(AActor* TargetActor)
 {
 	if (!ArrivalMontage)
@@ -571,8 +610,8 @@ void UGA_CountessExecute::TryExecuteTarget(AActor* TargetActor)
 	bExecuting = true;
 	SetCanBeCanceled(true);
 	SetShouldBlockOtherAbilities(true);
-	ApplyExecuteDamage(TargetActor);
 	LockExecuteMovement(TargetActor);
+	SetupExecuteDamageWait();
 	StartExecuteMontage();
 }
 
@@ -670,28 +709,4 @@ void UGA_CountessExecute::RestoreExecuteMovement()
 	PreviousTargetCustomMovementMode = 0;
 	bAvatarMovementLocked = false;
 	bTargetMovementLocked = false;
-}
-
-void UGA_CountessExecute::ApplyExecuteDamage(AActor* TargetActor)
-{
-	if (!K2_HasAuthority())
-	{
-		return;
-	}
-
-	if (!IsValidExecuteTarget(TargetActor))
-	{
-		return;
-	}
-
-	if (!DamageEffectClass)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CountessExecute: DamageEffectClass is not set."));
-		return;
-	}
-
-	ApplyGameplayEffectToHitResultActor(
-		BuildTargetHitResult(TargetActor),
-		DamageEffectClass,
-		GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 }

@@ -144,10 +144,16 @@ void UGA_Combo::DoDamage(FGameplayEventData Data)
 		return;
 	}
 
-	TArray<FHitResult> HitResults = GetHitResultFromSweepLocationTargetData(Data.TargetData, TargetSweepSphereRadius, ETeamAttitude::Hostile, ShouldDrawDebug());
+	int32 HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(Data.TargetData);
 
-	for (const auto& HitResult : HitResults)
+	for (int32 i = 0; i < HitResultCount; i++)
 	{
+		FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(Data.TargetData, i);
+		if (!HitResult.GetActor())
+		{
+			continue;
+		}
+
 		TSubclassOf<UGameplayEffect> GameplayEffect = GetDamageEffectForCurrentCombo();
 		ApplyGameplayEffectToHitResultActor(HitResult, GameplayEffect, GetAbilityLevel(CurrentSpecHandle, CurrentActorInfo));
 	}

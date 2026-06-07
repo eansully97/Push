@@ -40,6 +40,7 @@ namespace PushGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayEvent_Ability_Combo_Change_End, "GameplayEvent.Ability.Combo.Change.End");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayEvent_Ability_Combo_Damage, "GameplayEvent.Ability.Combo.Damage");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayEvent_Status_Launch, "GameplayEvent.Status.Launch");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayEvent_Ability_Countess_Execute_Damage, "GameplayEvent.Ability.Countess.Execute.Damage");
 
 	// Status
 	UE_DEFINE_GAMEPLAY_TAG(Status_Dead, "Status.Dead");

@@ -3,11 +3,32 @@
 
 #include "GA_UpperCut.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Push/GameplayAbilities/GA_Combo.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Push/PushGameplayTags.h"
 #include "Push/Player/Characters/PushPlayerCharacter.h"
+
+namespace
+{
+	TArray<FHitResult> GetValidHitResultsFromTargetData(const FGameplayAbilityTargetDataHandle& TargetData)
+	{
+		TArray<FHitResult> HitResults;
+		const int32 HitResultCount = UAbilitySystemBlueprintLibrary::GetDataCountFromTargetData(TargetData);
+
+		for (int32 Index = 0; Index < HitResultCount; ++Index)
+		{
+			FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetData, Index);
+			if (HitResult.GetActor())
+			{
+				HitResults.Add(MoveTemp(HitResult));
+			}
+		}
+
+		return HitResults;
+	}
+}
 
 UGA_UpperCut::UGA_UpperCut()
 {
@@ -88,19 +109,12 @@ void UGA_UpperCut::StartLaunching(FGameplayEventData EventData)
 {
 	if (K2_HasAuthority())
 	{
-		TArray<FHitResult> TargetHitResults =
-			GetHitResultFromSweepLocationTargetData(
-				EventData.TargetData,
-				AbilitySweepRadius,
-				ETeamAttitude::Hostile,
-				ShouldDrawDebug()
-			);
-
+		const TArray<FHitResult> TargetHitResults = GetValidHitResultsFromTargetData(EventData.TargetData);
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
 
 		PushTarget(AvatarActor, FVector::UpVector * UppercutLaunchSpeed);
 
-		for (FHitResult& HitResult : TargetHitResults)
+		for (const FHitResult& HitResult : TargetHitResults)
 		{
 			AActor* HitActor = HitResult.GetActor();
 			PushTarget(HitActor, FVector::UpVector * UppercutLaunchSpeed);
@@ -177,15 +191,14 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 			return;
 		}
 
-		TArray<FHitResult> TargetHitResults =
-			GetHitResultFromSweepLocationTargetData(
-				EventData.TargetData,
-				AbilitySweepRadius,
-				ETeamAttitude::Hostile,
-				ShouldDrawDebug()
-			);
+		const TArray<FHitResult> TargetHitResults = GetValidHitResultsFromTargetData(EventData.TargetData);
 
 		AActor* AvatarActor = GetAvatarActorFromActorInfo();
+		if (!AvatarActor)
+		{
+			return;
+		}
+
 		PushTarget(AvatarActor, FVector::UpVector * ComboSelfLaunchSpeed);
 
 		const FGenericDamageEffectDef* EffectDef = GetDamageEffectDefinitionForCurrentCombo();
@@ -194,9 +207,9 @@ void UGA_UpperCut::HandleComboDamageEvent(FGameplayEventData EventData)
 			return;
 		}
 
-		for (FHitResult& HitResult : TargetHitResults)
+		for (const FHitResult& HitResult : TargetHitResults)
 		{
-			FVector PushVelocity = GetAvatarActorFromActorInfo()->GetActorTransform().TransformVector(EffectDef->PushVelocity);
+			FVector PushVelocity = AvatarActor->GetActorTransform().TransformVector(EffectDef->PushVelocity);
 			AActor* HitActor = HitResult.GetActor();
 			PushTarget(HitActor, PushVelocity);
 			ApplyGameplayEffectToHitResultActor(

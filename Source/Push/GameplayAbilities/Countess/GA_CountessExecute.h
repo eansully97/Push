@@ -89,7 +89,11 @@ private:
 	UFUNCTION()
 	void HandleExecuteMontageCancelled();
 
+	UFUNCTION()
+	void HandleExecuteDamageEvent(FGameplayEventData EventData);
+
 	void SetupInputWait();
+	void SetupExecuteDamageWait();
 	void StartLocalOverlayScan();
 	void StopLocalOverlayScan();
 	void RefreshExecutableOverlays();
@@ -106,13 +110,11 @@ private:
 	UMeshComponent* GetOverlayMeshComponent(AActor* TargetActor) const;
 	FVector GetTargetAnchorLocation(AActor* TargetActor) const;
 	bool TryTeleportBehindTarget(AActor* TargetActor) const;
-	FHitResult BuildTargetHitResult(AActor* TargetActor) const;
 	void TryExecuteTarget(AActor* TargetActor);
 	void StartExecuteMontage();
 	void FinishExecute();
 	void LockExecuteMovement(AActor* TargetActor);
 	void RestoreExecuteMovement();
-	void ApplyExecuteDamage(AActor* TargetActor);
 
 	FTimerHandle OverlayScanTimerHandle;
 

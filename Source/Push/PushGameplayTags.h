@@ -43,6 +43,8 @@ namespace PushGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Combo_Damage);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Status_Launch);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayEvent_Ability_Countess_Execute_Damage);
+
 	// Status
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Dead);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Status_Hero);
