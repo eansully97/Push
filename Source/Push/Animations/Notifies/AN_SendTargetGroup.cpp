@@ -6,9 +6,58 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameplayCueManager.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+namespace
+{
+	FVector GetFirstNonZeroVector(const FVector& Primary, const FVector& Secondary, const FVector& Fallback)
+	{
+		if (!Primary.IsNearlyZero())
+		{
+			return Primary;
+		}
+
+		if (!Secondary.IsNearlyZero())
+		{
+			return Secondary;
+		}
+
+		return Fallback;
+	}
+
+	FHitResult BuildCueSafeHitResult(const FHitResult& HitResult, AActor* OwnerActor)
+	{
+		FHitResult SafeHitResult = HitResult;
+		AActor* HitActor = SafeHitResult.GetActor();
+
+		const FVector FallbackLocation = HitActor ? HitActor->GetActorLocation() : FVector::ZeroVector;
+		const FVector HitLocation = GetFirstNonZeroVector(
+			SafeHitResult.ImpactPoint,
+			SafeHitResult.Location,
+			FallbackLocation);
+
+		SafeHitResult.ImpactPoint = HitLocation;
+		SafeHitResult.Location = HitLocation;
+
+		const FVector OwnerToHitDirection =
+			OwnerActor && !HitLocation.IsNearlyZero()
+				? (HitLocation - OwnerActor->GetActorLocation()).GetSafeNormal()
+				: FVector::ZeroVector;
+
+		const FVector HitNormal = GetFirstNonZeroVector(
+			SafeHitResult.ImpactNormal,
+			SafeHitResult.Normal,
+			OwnerToHitDirection.IsNearlyZero() ? FVector::UpVector : OwnerToHitDirection).GetSafeNormal();
+
+		SafeHitResult.ImpactNormal = HitNormal;
+		SafeHitResult.Normal = HitNormal;
+
+		return SafeHitResult;
+	}
+}
 
 void UAN_SendTargetGroup::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                  const FAnimNotifyEventReference& EventReference)
@@ -71,9 +120,10 @@ void UAN_SendTargetGroup::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 			HitActors.Add(HitActor);
 
-			FGameplayAbilityTargetData_SingleTargetHit* TargetHit = new FGameplayAbilityTargetData_SingleTargetHit(HitResult);
+			const FHitResult SafeHitResult = BuildCueSafeHitResult(HitResult, OwnerActor);
+			FGameplayAbilityTargetData_SingleTargetHit* TargetHit = new FGameplayAbilityTargetData_SingleTargetHit(SafeHitResult);
 			EventData.TargetData.Add(TargetHit);
-			SendLocalGameplayCue(HitResult, MeshComp, Animation);
+			SendLocalGameplayCue(SafeHitResult, MeshComp, Animation);
 		}
 	}
 
@@ -99,12 +149,21 @@ void UAN_SendTargetGroup::SendLocalGameplayCue(const FHitResult& HitResult, USke
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = HitResult.ImpactPoint;
-	CueParams.Normal = HitResult.Normal;
+	CueParams.Normal = HitResult.ImpactNormal;
 	CueParams.Instigator = MeshComp->GetOwner();
 	CueParams.EffectCauser = MeshComp->GetOwner();
 	CueParams.SourceObject = Animation;
 	CueParams.PhysicalMaterial = HitResult.PhysMaterial.Get();
-	CueParams.TargetAttachComponent = MeshComp;
+	CueParams.TargetAttachComponent = HitResult.GetComponent();
+	if (!CueParams.TargetAttachComponent.IsValid())
+	{
+		CueParams.TargetAttachComponent = HitActor->GetRootComponent();
+	}
+
+	FGameplayEffectContextHandle EffectContext(
+		UAbilitySystemGlobals::Get().AllocGameplayEffectContext());
+	EffectContext.AddHitResult(HitResult);
+	CueParams.EffectContext = EffectContext;
 
 	for (const FGameplayTag& GameplayCueTag : GameplayCueTriggerTags)
 	{

@@ -35,9 +35,11 @@ void UGameplayWidget::NativeDestruct()
 void UGameplayWidget::InitializeFromOwner()
 {
 	UPushAbilitySystemComponent* CurrentOwnerASC = nullptr;
+	TArray<FPushInputActivatedAbilityDisplayData> DisplayAbilities;
 	if (const APushCharacter* PushCharacter = Cast<APushCharacter>(GetOwningPlayerPawn()))
 	{
 		CurrentOwnerASC = Cast<UPushAbilitySystemComponent>(PushCharacter->GetActivePushAbilitySystemComponent());
+		DisplayAbilities = PushCharacter->GetDisplayInputActivatedAbilities();
 	}
 
 	if (!CurrentOwnerASC)
@@ -92,13 +94,11 @@ void UGameplayWidget::InitializeFromOwner()
 
 	if (!bAbilityListConfigured)
 	{
-		const TArray<FPushInputActivatedAbilityDisplayData> DisplayAbilities =
-			OwnerAbilitySystemComponent->GetDisplayInputActivatedAbilities();
 		if (AreAbilitySpecsReady(OwnerAbilitySystemComponent, DisplayAbilities))
 		{
 			if (AbilityList)
 			{
-				AbilityList->ConfigureAbilities(OwnerAbilitySystemComponent);
+				AbilityList->ConfigureAbilities(OwnerAbilitySystemComponent, DisplayAbilities);
 			}
 			bAbilityListConfigured = true;
 		}

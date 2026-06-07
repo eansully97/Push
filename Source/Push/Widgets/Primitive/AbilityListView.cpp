@@ -8,6 +8,17 @@
 
 void UAbilityListView::ConfigureAbilities(UPushAbilitySystemComponent* AbilitySystemComponent)
 {
+	const TArray<FPushInputActivatedAbilityDisplayData> Abilities = AbilitySystemComponent
+		? AbilitySystemComponent->GetDisplayInputActivatedAbilities()
+		: TArray<FPushInputActivatedAbilityDisplayData>();
+
+	ConfigureAbilities(AbilitySystemComponent, Abilities);
+}
+
+void UAbilityListView::ConfigureAbilities(
+	UPushAbilitySystemComponent* AbilitySystemComponent,
+	const TArray<FPushInputActivatedAbilityDisplayData>& Abilities)
+{
 	ClearListItems();
 	OnEntryWidgetGenerated().RemoveAll(this);
 	OnEntryWidgetGenerated().AddUObject(this, &ThisClass::AbilityGaugeGenerated);
@@ -17,8 +28,6 @@ void UAbilityListView::ConfigureAbilities(UPushAbilitySystemComponent* AbilitySy
 		return;
 	}
 
-	const TArray<FPushInputActivatedAbilityDisplayData> Abilities =
-		AbilitySystemComponent->GetDisplayInputActivatedAbilities();
 	for (const FPushInputActivatedAbilityDisplayData& AbilityData : Abilities)
 	{
 		if (AbilityData.AbilityClass)

@@ -19,6 +19,9 @@ class PUSH_API UAbilityListView : public UListView
 	GENERATED_BODY()
 public:
 	void ConfigureAbilities(UPushAbilitySystemComponent* AbilitySystemComponent);
+	void ConfigureAbilities(
+		UPushAbilitySystemComponent* AbilitySystemComponent,
+		const TArray<FPushInputActivatedAbilityDisplayData>& Abilities);
 	void AbilityGaugeGenerated(UUserWidget& Widget);
 
 	UPROPERTY(EditAnywhere, Category = "Data")

@@ -229,16 +229,6 @@ UPushAbilitySystemComponent* APushCharacter::ResolveAbilitySystemComponent() con
 	return PushAbilitySystemComponent;
 }
 
-UPushAbilitySystemComponent* APushCharacter::ResolveDisplayAbilitySystemComponent() const
-{
-	if (UPushAbilitySystemComponent* RuntimeASC = ResolveAbilitySystemComponent())
-	{
-		return RuntimeASC;
-	}
-
-	return PushAbilitySystemComponent;
-}
-
 UPushAttributeSet* APushCharacter::ResolveAttributeSet() const
 {
 	if (const APushPlayerState* PushPlayerState = GetPlayerState<APushPlayerState>())
@@ -784,9 +774,20 @@ UAbilitySystemComponent* APushCharacter::GetActivePushAbilitySystemComponent() c
 
 TArray<FPushInputActivatedAbilityDisplayData> APushCharacter::GetDisplayInputActivatedAbilities() const
 {
-	if (const UPushAbilitySystemComponent* ASC = ResolveDisplayAbilitySystemComponent())
+	const UPushAbilitySystemComponent* RuntimeASC = ResolveAbilitySystemComponent();
+	if (RuntimeASC)
 	{
-		return ASC->GetDisplayInputActivatedAbilities();
+		TArray<FPushInputActivatedAbilityDisplayData> DisplayAbilities =
+			RuntimeASC->GetDisplayInputActivatedAbilities();
+		if (!DisplayAbilities.IsEmpty())
+		{
+			return DisplayAbilities;
+		}
+	}
+
+	if (PushAbilitySystemComponent && PushAbilitySystemComponent != RuntimeASC)
+	{
+		return PushAbilitySystemComponent->GetDisplayInputActivatedAbilities();
 	}
 
 	return {};

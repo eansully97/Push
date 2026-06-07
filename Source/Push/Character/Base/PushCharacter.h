@@ -58,7 +58,6 @@ private:
 	void InitializeAbilitySystem();
 	UPushAbilitySystemComponent* ResolvePlayerStateAbilitySystemComponent() const;
 	UPushAbilitySystemComponent* ResolveAbilitySystemComponent() const;
-	UPushAbilitySystemComponent* ResolveDisplayAbilitySystemComponent() const;
 	UPushAttributeSet* ResolveAttributeSet() const;
 	void RegisterAttributeSetSubobjects(AActor* AttributeSetOwner) const;
 	void BindChangeDelegates();
