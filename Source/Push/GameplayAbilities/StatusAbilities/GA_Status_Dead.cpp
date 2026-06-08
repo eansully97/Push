@@ -29,6 +29,20 @@ void UGA_Status_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 	if (K2_HasAuthority())
 	{
+		if (!TriggerEventData)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s cannot grant death rewards without trigger event data."), *GetName());
+			K2_EndAbility();
+			return;
+		}
+
+		if (!RewardEffect)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s cannot grant death rewards: RewardEffect is not set."), *GetName());
+			K2_EndAbility();
+			return;
+		}
+
 		AActor* Killer = TriggerEventData->ContextHandle.GetEffectCauser();
 		if ( !Killer || !UPushAbilitySystemStatics::IsHero(Killer))
 		{
@@ -58,6 +72,13 @@ void UGA_Status_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			float KillerGoldReward = TotalGoldReward * KillerRewardPortion;
 
 			FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(RewardEffect);
+			if (!EffectSpecHandle.IsValid() || !EffectSpecHandle.Data.IsValid())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s failed to create killer reward effect spec."), *GetName());
+				K2_EndAbility();
+				return;
+			}
+
 			EffectSpecHandle.Data->SetSetByCallerMagnitude(PushGameplayTags::Data_Value_Experience, KillerExperienceReward);
 			EffectSpecHandle.Data->SetSetByCallerMagnitude(PushGameplayTags::Data_Value_Gold, KillerGoldReward);
 			K2_ApplyGameplayEffectSpecToTarget(EffectSpecHandle, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(Killer));
@@ -70,6 +91,13 @@ void UGA_Status_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		float GoldPerTarget = TotalGoldReward / RewardTargets.Num();
 
 		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(RewardEffect);
+		if (!EffectSpecHandle.IsValid() || !EffectSpecHandle.Data.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s failed to create shared reward effect spec."), *GetName());
+			K2_EndAbility();
+			return;
+		}
+
 		EffectSpecHandle.Data->SetSetByCallerMagnitude(PushGameplayTags::Data_Value_Experience, ExperiencePerTarget);
 		EffectSpecHandle.Data->SetSetByCallerMagnitude(PushGameplayTags::Data_Value_Gold, GoldPerTarget);
 		K2_ApplyGameplayEffectSpecToTarget(EffectSpecHandle, UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActorArray(RewardTargets, true));

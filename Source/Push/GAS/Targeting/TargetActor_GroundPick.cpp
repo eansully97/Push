@@ -50,11 +50,17 @@ void ATargetActor_GroundPick::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ATargetActor_GroundPick::ConfirmTargetingAndContinue()
 {
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionObjectQueryParams QueryParams;
 	QueryParams.AddObjectTypesToQuery(ECC_Pawn);
 	const FCollisionShape CollisionShape = FCollisionShape::MakeSphere(TargetAreaRadius);
-	GetWorld()->OverlapMultiByObjectType(OverlapResults, GetActorLocation(),FQuat::Identity, QueryParams, CollisionShape);
+	World->OverlapMultiByObjectType(OverlapResults, GetActorLocation(), FQuat::Identity, QueryParams, CollisionShape);
 	TSet<AActor*> TargetActors;
 
 	const IGenericTeamAgentInterface* OwnerTeamInterface = nullptr;

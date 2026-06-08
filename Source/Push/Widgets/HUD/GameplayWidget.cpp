@@ -94,7 +94,7 @@ void UGameplayWidget::InitializeFromOwner()
 
 	if (!bAbilityListConfigured)
 	{
-		if (AreAbilitySpecsReady(OwnerAbilitySystemComponent, DisplayAbilities))
+		if (!DisplayAbilities.IsEmpty())
 		{
 			if (AbilityList)
 			{
@@ -112,28 +112,6 @@ void UGameplayWidget::InitializeFromOwner()
 	{
 		StartAbilitySystemBindingRetry();
 	}
-}
-
-bool UGameplayWidget::AreAbilitySpecsReady(
-	const UPushAbilitySystemComponent* AbilitySystemComponent,
-	const TArray<FPushInputActivatedAbilityDisplayData>& Abilities) const
-{
-	if (!AbilitySystemComponent)
-	{
-		return false;
-	}
-
-	for (const FPushInputActivatedAbilityDisplayData& AbilityData : Abilities)
-	{
-		const FGameplayAbilitySpec* AbilitySpec =
-			AbilitySystemComponent->FindAbilitySpecFromInputID(static_cast<int32>(AbilityData.InputID));
-		if (!AbilitySpec || !AbilitySpec->Ability || AbilitySpec->Ability->GetClass() != AbilityData.AbilityClass)
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 void UGameplayWidget::StartAbilitySystemBindingRetry()

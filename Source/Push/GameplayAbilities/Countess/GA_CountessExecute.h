@@ -11,6 +11,7 @@
 class UMaterialInterface;
 class UMeshComponent;
 class ACharacter;
+class UPushAbilitySystemComponent;
 
 USTRUCT()
 struct FCountessExecuteOverlayEntry
@@ -37,6 +38,7 @@ public:
 	UGA_CountessExecute();
 
 	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
+	virtual void OnRemoveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -81,9 +83,6 @@ private:
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	UFUNCTION()
-	void HandleInputPressed(float TimeWaited);
-
-	UFUNCTION()
 	void HandleExecuteMontageEnded();
 
 	UFUNCTION()
@@ -92,8 +91,11 @@ private:
 	UFUNCTION()
 	void HandleExecuteDamageEvent(FGameplayEventData EventData);
 
-	void SetupInputWait();
 	void SetupExecuteDamageWait();
+	void BindAbilitySpecDirtiedDelegate(UPushAbilitySystemComponent* AbilitySystemComponent);
+	void ClearAbilitySpecDirtiedDelegate();
+	void HandleAbilitySpecDirtied(const FGameplayAbilitySpec& AbilitySpec);
+	void RefreshPassiveOverlayScanForSpec(const FGameplayAbilitySpec& AbilitySpec);
 	void StartLocalOverlayScan();
 	void StopLocalOverlayScan();
 	void RefreshExecutableOverlays();
@@ -117,13 +119,16 @@ private:
 	void RestoreExecuteMovement();
 
 	FTimerHandle OverlayScanTimerHandle;
+	FDelegateHandle AbilitySpecDirtiedDelegateHandle;
 
 	UPROPERTY()
 	TArray<FCountessExecuteOverlayEntry> OverlayEntries;
 
+	TWeakObjectPtr<UPushAbilitySystemComponent> ObservedAbilitySystemComponent;
 	TWeakObjectPtr<AActor> ExecutingTarget;
 	TWeakObjectPtr<ACharacter> MovementLockedAvatar;
 	TWeakObjectPtr<ACharacter> MovementLockedTarget;
+	FGameplayAbilitySpecHandle ObservedAbilitySpecHandle;
 	TEnumAsByte<EMovementMode> PreviousAvatarMovementMode = MOVE_None;
 	TEnumAsByte<EMovementMode> PreviousTargetMovementMode = MOVE_None;
 	uint8 PreviousAvatarCustomMovementMode = 0;

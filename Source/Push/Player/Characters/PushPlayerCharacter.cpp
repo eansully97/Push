@@ -13,12 +13,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Push/Push.h"
 #include "Push/PushGameplayTags.h"
-#include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 
 APushPlayerCharacter::APushPlayerCharacter()
 {
-	HeroAttributeSet = CreateDefaultSubobject<UPushHeroAttributeSet>("Hero Attribute Set");
-
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->bUsePawnControlRotation = true;

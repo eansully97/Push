@@ -19,14 +19,22 @@ class PUSH_API ULevelGauge : public UUserWidget
 	GENERATED_BODY()
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	void UpdateGauge(const FOnAttributeChangeData& Data);
 
 private:
+	void ClearDelegates();
+
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	FName PercentMaterialParamName = "Percent";
 
 	UPROPERTY()
-	const UAbilitySystemComponent* OwnerASC;
+	UAbilitySystemComponent* OwnerASC;
+
+	FDelegateHandle ExperienceChangedDelegateHandle;
+	FDelegateHandle NextLevelExperienceChangedDelegateHandle;
+	FDelegateHandle PrevLevelExperienceChangedDelegateHandle;
+	FDelegateHandle LevelChangedDelegateHandle;
 	
 	UPROPERTY(meta = (BindWidget))
 	UImage* LevelProgressImage;

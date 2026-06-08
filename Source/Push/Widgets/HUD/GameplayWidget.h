@@ -24,9 +24,6 @@ public:
 
 private:
 	void InitializeFromOwner();
-	bool AreAbilitySpecsReady(
-		const UPushAbilitySystemComponent* AbilitySystemComponent,
-		const TArray<FPushInputActivatedAbilityDisplayData>& Abilities) const;
 	void StartAbilitySystemBindingRetry();
 	void StopAbilitySystemBindingRetry();
 

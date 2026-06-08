@@ -22,6 +22,7 @@ void UAbilityListView::ConfigureAbilities(
 	ClearListItems();
 	OnEntryWidgetGenerated().RemoveAll(this);
 	OnEntryWidgetGenerated().AddUObject(this, &ThisClass::AbilityGaugeGenerated);
+	RebuildAbilityWidgetDataCache();
 
 	if (!AbilitySystemComponent)
 	{
@@ -52,16 +53,25 @@ void UAbilityListView::AbilityGaugeGenerated(UUserWidget& Widget)
 
 const FAbilityWidgetData* UAbilityListView::FindWidgetDataForAbility(const TSubclassOf<UGameplayAbility>& AbilityClass) const
 {
-	if (!AbilityDataTable)
+	if (!AbilityClass)
 		return nullptr;
+
+	return AbilityWidgetDataByAbilityClass.Find(AbilityClass);
+}
+
+void UAbilityListView::RebuildAbilityWidgetDataCache()
+{
+	AbilityWidgetDataByAbilityClass.Reset();
+
+	if (!AbilityDataTable)
+		return;
 
 	for (auto& WidgetDataPair : AbilityDataTable->GetRowMap())
 	{
 		const FAbilityWidgetData* WidgetData = AbilityDataTable->FindRow<FAbilityWidgetData>(WidgetDataPair.Key, "");
-		if (WidgetData->AbilityClass == AbilityClass)
+		if (WidgetData && WidgetData->AbilityClass)
 		{
-			return WidgetData;
+			AbilityWidgetDataByAbilityClass.Add(WidgetData->AbilityClass, *WidgetData);
 		}
 	}
-	return nullptr;
 }

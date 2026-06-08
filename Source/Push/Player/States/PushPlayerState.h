@@ -9,6 +9,7 @@
 
 class UPushAbilitySystemComponent;
 class UPushAttributeSet;
+class UPushHeroAttributeSet;
 class UAbilitySystemComponent;
 
 UCLASS()
@@ -22,6 +23,7 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UPushAbilitySystemComponent* GetPushAbilitySystemComponent() const;
 	UPushAttributeSet* GetPushAttributeSet() const;
+	UPushHeroAttributeSet* GetPushHeroAttributeSet() const;
 
 private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
@@ -29,4 +31,7 @@ private:
 
 	UPROPERTY()
 	UPushAttributeSet* PushAttributeSet;
+
+	UPROPERTY()
+	UPushHeroAttributeSet* HeroAttributeSet;
 };

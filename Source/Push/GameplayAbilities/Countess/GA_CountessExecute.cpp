@@ -7,7 +7,6 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/MeshComponent.h"
 #include "Engine/OverlapResult.h"
 #include "GameFramework/Character.h"
@@ -17,6 +16,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "Push/PushGameplayTags.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/GAS/Components/PushAbilitySystemComponent.h"
 #include "Push/Player/Characters/PushPlayerCharacter.h"
 
 UGA_CountessExecute::UGA_CountessExecute()
@@ -32,10 +32,23 @@ void UGA_CountessExecute::OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo
 {
 	Super::OnAvatarSet(ActorInfo, Spec);
 
+	ObservedAbilitySpecHandle = Spec.Handle;
 	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
-		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
+		BindAbilitySpecDirtiedDelegate(Cast<UPushAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get()));
 	}
+
+	RefreshPassiveOverlayScanForSpec(Spec);
+}
+
+void UGA_CountessExecute::OnRemoveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
+{
+	ClearAbilitySpecDirtiedDelegate();
+	StopLocalOverlayScan();
+	ClearExecutableOverlays();
+	ObservedAbilitySpecHandle = FGameplayAbilitySpecHandle();
+
+	Super::OnRemoveAbility(ActorInfo, Spec);
 }
 
 void UGA_CountessExecute::ActivateAbility(
@@ -49,12 +62,19 @@ void UGA_CountessExecute::ActivateAbility(
 	SetCanBeCanceled(false);
 	SetShouldBlockOtherAbilities(false);
 
-	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
+	AActor* TargetActor = nullptr;
+	if (!TryFindBestExecuteTarget(TargetActor))
 	{
-		SetupInputWait();
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
 	}
 
-	StartLocalOverlayScan();
+	TryExecuteTarget(TargetActor);
+
+	if (!bExecuting)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
 }
 
 void UGA_CountessExecute::EndAbility(
@@ -65,34 +85,12 @@ void UGA_CountessExecute::EndAbility(
 	bool bWasCancelled)
 {
 	RestoreExecuteMovement();
-	StopLocalOverlayScan();
-	ClearExecutableOverlays();
 	ExecutingTarget.Reset();
 	bExecuting = false;
+	SetCanBeCanceled(false);
+	SetShouldBlockOtherAbilities(false);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-void UGA_CountessExecute::HandleInputPressed(float TimeWaited)
-{
-	if (bExecuting)
-	{
-		return;
-	}
-
-	AActor* TargetActor = nullptr;
-	if (!TryFindBestExecuteTarget(TargetActor))
-	{
-		SetupInputWait();
-		return;
-	}
-
-	TryExecuteTarget(TargetActor);
-
-	if (!bExecuting)
-	{
-		SetupInputWait();
-	}
 }
 
 void UGA_CountessExecute::HandleExecuteMontageEnded()
@@ -140,18 +138,6 @@ void UGA_CountessExecute::HandleExecuteDamageEvent(FGameplayEventData EventData)
 	}
 }
 
-void UGA_CountessExecute::SetupInputWait()
-{
-	if (bExecuting)
-	{
-		return;
-	}
-
-	UAbilityTask_WaitInputPress* WaitInputPressTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
-	WaitInputPressTask->OnPress.AddDynamic(this, &ThisClass::HandleInputPressed);
-	WaitInputPressTask->ReadyForActivation();
-}
-
 void UGA_CountessExecute::SetupExecuteDamageWait()
 {
 	if (!K2_HasAuthority())
@@ -166,6 +152,54 @@ void UGA_CountessExecute::SetupExecuteDamageWait()
 
 	WaitDamageEventTask->EventReceived.AddDynamic(this, &ThisClass::HandleExecuteDamageEvent);
 	WaitDamageEventTask->ReadyForActivation();
+}
+
+void UGA_CountessExecute::BindAbilitySpecDirtiedDelegate(UPushAbilitySystemComponent* AbilitySystemComponent)
+{
+	if (!AbilitySystemComponent || ObservedAbilitySystemComponent.Get() == AbilitySystemComponent)
+	{
+		return;
+	}
+
+	ClearAbilitySpecDirtiedDelegate();
+	ObservedAbilitySystemComponent = AbilitySystemComponent;
+	AbilitySpecDirtiedDelegateHandle =
+		AbilitySystemComponent->AbilitySpecDirtiedCallbacks.AddUObject(this, &ThisClass::HandleAbilitySpecDirtied);
+}
+
+void UGA_CountessExecute::ClearAbilitySpecDirtiedDelegate()
+{
+	if (UPushAbilitySystemComponent* AbilitySystemComponent = ObservedAbilitySystemComponent.Get())
+	{
+		if (AbilitySpecDirtiedDelegateHandle.IsValid())
+		{
+			AbilitySystemComponent->AbilitySpecDirtiedCallbacks.Remove(AbilitySpecDirtiedDelegateHandle);
+		}
+	}
+
+	AbilitySpecDirtiedDelegateHandle.Reset();
+	ObservedAbilitySystemComponent.Reset();
+}
+
+void UGA_CountessExecute::HandleAbilitySpecDirtied(const FGameplayAbilitySpec& AbilitySpec)
+{
+	if (AbilitySpec.Handle == ObservedAbilitySpecHandle)
+	{
+		RefreshPassiveOverlayScanForSpec(AbilitySpec);
+	}
+}
+
+void UGA_CountessExecute::RefreshPassiveOverlayScanForSpec(const FGameplayAbilitySpec& AbilitySpec)
+{
+	if (AbilitySpec.Level > 0)
+	{
+		StartLocalOverlayScan();
+	}
+	else
+	{
+		StopLocalOverlayScan();
+		ClearExecutableOverlays();
+	}
 }
 
 void UGA_CountessExecute::StartLocalOverlayScan()
@@ -637,13 +671,8 @@ void UGA_CountessExecute::FinishExecute()
 		return;
 	}
 
-	bExecuting = false;
-	ExecutingTarget.Reset();
-	SetCanBeCanceled(false);
-	SetShouldBlockOtherAbilities(false);
-	RestoreExecuteMovement();
+	K2_EndAbility();
 	RefreshExecutableOverlays();
-	SetupInputWait();
 }
 
 void UGA_CountessExecute::LockExecuteMovement(AActor* TargetActor)

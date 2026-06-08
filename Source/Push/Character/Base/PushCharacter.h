@@ -15,6 +15,7 @@ class UAIPerceptionStimuliSourceComponent;
 class UWidgetComponent;
 class UPushAbilitySystemComponent;
 class UPushAttributeSet;
+class UPushHeroLoadoutDataAsset;
 class UAttributeSet;
 
 UCLASS()
@@ -74,6 +75,9 @@ private:
 	
 	UPROPERTY(VisibleDefaultsOnly, Category = "Gameplay Ability")
 	UPushAbilitySystemComponent* PushAbilitySystemComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Ability|Loadout", meta = (ToolTip = "Per-hero ability/effect defaults copied into the PlayerState ASC for player-controlled characters. Pawn-owned ASCs ignore this."))
+	UPushHeroLoadoutDataAsset* HeroLoadout = nullptr;
 
 	UPROPERTY()
 	UPushAttributeSet* PushAttributeSet;

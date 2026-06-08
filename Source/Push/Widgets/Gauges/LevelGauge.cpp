@@ -13,6 +13,7 @@ void ULevelGauge::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	ClearDelegates();
 	NumberFormattingOptions.MaximumFractionalDigits = 0;
 	APawn* OwnerPawn = GetOwningPlayerPawn();
 	if (!OwnerPawn)
@@ -24,14 +25,75 @@ void ULevelGauge::NativeConstruct()
 
 	OwnerASC = OwnerAbilitySystemComponent;
 	UpdateGauge(FOnAttributeChangeData());
-	OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetExperienceAttribute()).AddUObject(this, &ThisClass::UpdateGauge);
-	OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetNextLevelExperienceAttribute()).AddUObject(this, &ThisClass::UpdateGauge);
-	OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetPrevLevelExperienceAttribute()).AddUObject(this, &ThisClass::UpdateGauge);
-	OwnerAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetLevelAttribute()).AddUObject(this, &ThisClass::UpdateGauge);
+	ExperienceChangedDelegateHandle =
+		OwnerAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetExperienceAttribute())
+		.AddUObject(this, &ThisClass::UpdateGauge);
+	NextLevelExperienceChangedDelegateHandle =
+		OwnerAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetNextLevelExperienceAttribute())
+		.AddUObject(this, &ThisClass::UpdateGauge);
+	PrevLevelExperienceChangedDelegateHandle =
+		OwnerAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetPrevLevelExperienceAttribute())
+		.AddUObject(this, &ThisClass::UpdateGauge);
+	LevelChangedDelegateHandle =
+		OwnerAbilitySystemComponent
+		->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetLevelAttribute())
+		.AddUObject(this, &ThisClass::UpdateGauge);
+}
+
+void ULevelGauge::NativeDestruct()
+{
+	ClearDelegates();
+	Super::NativeDestruct();
+}
+
+void ULevelGauge::ClearDelegates()
+{
+	if (!OwnerASC)
+	{
+		return;
+	}
+
+	if (ExperienceChangedDelegateHandle.IsValid())
+	{
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetExperienceAttribute())
+			.Remove(ExperienceChangedDelegateHandle);
+		ExperienceChangedDelegateHandle.Reset();
+	}
+
+	if (NextLevelExperienceChangedDelegateHandle.IsValid())
+	{
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetNextLevelExperienceAttribute())
+			.Remove(NextLevelExperienceChangedDelegateHandle);
+		NextLevelExperienceChangedDelegateHandle.Reset();
+	}
+
+	if (PrevLevelExperienceChangedDelegateHandle.IsValid())
+	{
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetPrevLevelExperienceAttribute())
+			.Remove(PrevLevelExperienceChangedDelegateHandle);
+		PrevLevelExperienceChangedDelegateHandle.Reset();
+	}
+
+	if (LevelChangedDelegateHandle.IsValid())
+	{
+		OwnerASC->GetGameplayAttributeValueChangeDelegate(UPushHeroAttributeSet::GetLevelAttribute())
+			.Remove(LevelChangedDelegateHandle);
+		LevelChangedDelegateHandle.Reset();
+	}
+
+	OwnerASC = nullptr;
 }
 
 void ULevelGauge::UpdateGauge(const FOnAttributeChangeData& Data)
 {
+	if (!OwnerASC)
+	{
+		return;
+	}
+
 	bool bFound = false;
 	float CurrentXP = OwnerASC->GetGameplayAttributeValue(UPushHeroAttributeSet::GetExperienceAttribute(), bFound);
 	if (!bFound)
@@ -51,7 +113,7 @@ void ULevelGauge::UpdateGauge(const FOnAttributeChangeData& Data)
 	float Progress = CurrentXP - PrevLevXP;
 	float LevelXPAmount = NextLevelXP - PrevLevXP;
 
-	float PercentXP = Progress / LevelXPAmount;
+	float PercentXP = LevelXPAmount > 0.f ? Progress / LevelXPAmount : 1.f;
 
 	if (NextLevelXP == 0)
 	{

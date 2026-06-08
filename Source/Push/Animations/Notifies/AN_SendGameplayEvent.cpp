@@ -11,7 +11,7 @@ void UAN_SendGameplayEvent::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	if (!MeshComp->GetOwner())
+	if (!MeshComp || !MeshComp->GetOwner() || !EventTag.IsValid())
 		return;
 
 	UAbilitySystemComponent* OwnerASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(MeshComp->GetOwner());

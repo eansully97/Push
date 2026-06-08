@@ -11,6 +11,7 @@
 #include "Push/GAS/Attributes/PushAttributeSet.h"
 #include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 #include "Push/GAS/Data/PA_AbilitySystemGenerics.h"
+#include "Push/GAS/Data/PushHeroLoadoutDataAsset.h"
 
 namespace
 {
@@ -128,7 +129,7 @@ bool UPushAbilitySystemComponent::InitializeBaseAttributes()
 			SetNumericAttributeBase(UPushHeroAttributeSet::GetMaxLevelExperienceAttribute(), MaxEXP);
 		}
 
-		ExperienceUpdated(FOnAttributeChangeData());
+		RefreshLevelForExperience(GetNumericAttribute(UPushHeroAttributeSet::GetExperienceAttribute()));
 	}
 
 	return true;
@@ -148,10 +149,26 @@ void UPushAbilitySystemComponent::ServerSideInit()
 
 	ValidateConfiguredDataOnce();
 
-	const bool bConfiguredStartupEffectsApplied = HasStartupEffects() && ApplyConfiguredStartupEffects();
-	const bool bBaseAttributesInitialized = bConfiguredStartupEffectsApplied ? false : InitializeBaseAttributes();
+	bool bStartupAttributesInitialized = false;
+	if (!bStartupEffectsApplied)
+	{
+		const bool bConfiguredStartupEffectsApplied = HasStartupEffects() && ApplyConfiguredStartupEffects();
+		if (bConfiguredStartupEffectsApplied)
+		{
+			bStartupAttributesInitialized = true;
+		}
+		else if (!bBaseAttributesInitialized)
+		{
+			bBaseAttributesInitialized = InitializeBaseAttributes();
+			bStartupAttributesInitialized = bBaseAttributesInitialized;
+		}
+		else
+		{
+			bStartupAttributesInitialized = true;
+		}
+	}
 
-	ApplyPostStartupEffects(bConfiguredStartupEffectsApplied || bBaseAttributesInitialized);
+	ApplyPostStartupEffects(bStartupAttributesInitialized);
 	GiveInitialAbilities();
 }
 
@@ -166,17 +183,17 @@ void UPushAbilitySystemComponent::ApplyPostStartupEffects(bool bStartupAttribute
 	if (!AbilitySystemGenerics)
 		return;
 
-	if (bStartupAttributesInitialized)
+	if (!bStartupAttributesInitialized)
+		return;
+
+	if (HasHeroAttributes())
 	{
-		if (HasHeroAttributes())
-		{
-			AuthApplyGameplayEffect(AbilitySystemGenerics->GetHealthRegenEffect());
-			AuthApplyGameplayEffect(AbilitySystemGenerics->GetManaRegenEffect());
-			AuthApplyGameplayEffect(AbilitySystemGenerics->GetAddHeroTagEffect());
-			AuthApplyGameplayEffect(AbilitySystemGenerics->GetLevelStatsEffect());
-		}
-		AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetHealthRegenEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetManaRegenEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetAddHeroTagEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetLevelStatsEffect());
 	}
+	AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
 
 	bStartupEffectsApplied = true;
 }
@@ -309,6 +326,24 @@ void UPushAbilitySystemComponent::ApplyFullStatEffect()
 	}
 }
 
+void UPushAbilitySystemComponent::ApplyRespawnStatEffects()
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !AbilitySystemGenerics)
+	{
+		return;
+	}
+
+	if (HasHeroAttributes())
+	{
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetHealthRegenEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetManaRegenEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetAddHeroTagEffect());
+		AuthApplyGameplayEffectIfMissing(AbilitySystemGenerics->GetLevelStatsEffect());
+	}
+
+	AuthApplyGameplayEffect(AbilitySystemGenerics->GetFullStatEffect());
+}
+
 void UPushAbilitySystemComponent::AuthApplyDeathStatusEffect()
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority() || !AbilitySystemGenerics)
@@ -351,14 +386,41 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 	if (!DefaultsSource || DefaultsSource == this)
 		return;
 
+	InitializeDefaultConfiguration(
+		DefaultsSource->InputActivatedAbilities,
+		DefaultsSource->PassiveAbilities,
+		DefaultsSource->StartupEffects,
+		DefaultsSource->AbilitySystemGenerics);
+}
+
+void UPushAbilitySystemComponent::InitializeDefaultsFromLoadout(const UPushHeroLoadoutDataAsset* Loadout)
+{
+	if (!Loadout)
+	{
+		return;
+	}
+
+	InitializeDefaultConfiguration(
+		Loadout->GetInputActivatedAbilities(),
+		Loadout->GetPassiveAbilities(),
+		Loadout->GetStartupEffects(),
+		Loadout->GetAbilitySystemGenerics());
+}
+
+void UPushAbilitySystemComponent::InitializeDefaultConfiguration(
+	const TMap<EAbilityInputID, FPushInputActivatedAbility>& NewInputActivatedAbilities,
+	const TArray<TSubclassOf<UGameplayAbility>>& NewPassiveAbilities,
+	const TArray<TSubclassOf<UGameplayEffect>>& NewStartupEffects,
+	UPA_AbilitySystemGenerics* NewAbilitySystemGenerics)
+{
 	const bool bAbilityDefaultsChanged =
-		!AreInputAbilityDefaultsEqual(InputActivatedAbilities, DefaultsSource->InputActivatedAbilities)
-		|| !AreClassArraysEqual(PassiveAbilities, DefaultsSource->PassiveAbilities)
-		|| AbilitySystemGenerics != DefaultsSource->AbilitySystemGenerics;
+		!AreInputAbilityDefaultsEqual(InputActivatedAbilities, NewInputActivatedAbilities)
+		|| !AreClassArraysEqual(PassiveAbilities, NewPassiveAbilities)
+		|| AbilitySystemGenerics != NewAbilitySystemGenerics;
 
 	const bool bStartupDefaultsChanged =
-		!AreClassArraysEqual(StartupEffects, DefaultsSource->StartupEffects)
-		|| AbilitySystemGenerics != DefaultsSource->AbilitySystemGenerics;
+		!AreClassArraysEqual(StartupEffects, NewStartupEffects)
+		|| AbilitySystemGenerics != NewAbilitySystemGenerics;
 
 	if (bAbilityDefaultsChanged)
 	{
@@ -373,6 +435,7 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 	if (bStartupDefaultsChanged)
 	{
 		bStartupEffectsApplied = false;
+		bBaseAttributesInitialized = false;
 	}
 
 	if (bAbilityDefaultsChanged || bStartupDefaultsChanged)
@@ -381,10 +444,10 @@ void UPushAbilitySystemComponent::InitializeDefaultsFrom(const UPushAbilitySyste
 		bConfiguredDataValid = false;
 	}
 
-	InputActivatedAbilities = DefaultsSource->InputActivatedAbilities;
-	PassiveAbilities = DefaultsSource->PassiveAbilities;
-	StartupEffects = DefaultsSource->StartupEffects;
-	AbilitySystemGenerics = DefaultsSource->AbilitySystemGenerics;
+	InputActivatedAbilities = NewInputActivatedAbilities;
+	PassiveAbilities = NewPassiveAbilities;
+	StartupEffects = NewStartupEffects;
+	AbilitySystemGenerics = NewAbilitySystemGenerics;
 }
 
 const TMap<EAbilityInputID, FPushInputActivatedAbility>& UPushAbilitySystemComponent::GetInputActivatedAbilities() const
@@ -571,6 +634,7 @@ void UPushAbilitySystemComponent::Server_UpgradeAbilityWithID_Implementation(EAb
 	SetNumericAttributeBase(UPushHeroAttributeSet::GetUpgradePointAttribute(), UpgradePoint - 1);
 	AbilitySpec->Level += 1;
 	MarkAbilitySpecDirty(*AbilitySpec);
+	AbilitySpecDirtiedCallbacks.Broadcast(*AbilitySpec);
 }
 
 bool UPushAbilitySystemComponent::Server_UpgradeAbilityWithID_Validate(EAbilityInputID InputID)
@@ -713,11 +777,16 @@ void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& Ch
 		RemoveLooseGameplayTag(PushGameplayTags::Status_Health_Full);
 	}
 
-	if (ChangeData.NewValue <= 0 && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+	if (ChangeData.NewValue <= 0)
 	{
-		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Health_Empty))
+		const bool bWasHealthEmpty = HasMatchingGameplayTag(PushGameplayTags::Status_Health_Empty);
+		if (!bWasHealthEmpty)
 		{
 			AddLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
+		}
+
+		if (!bWasHealthEmpty && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+		{
 			const TSubclassOf<UGameplayEffect> DeathEffect = AbilitySystemGenerics
 				? AbilitySystemGenerics->GetDeathEffect()
 				: nullptr;
@@ -733,10 +802,10 @@ void UPushAbilitySystemComponent::HealthUpdated(const FOnAttributeChangeData& Ch
 				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetOwner(), PushGameplayTags::Status_Dead, DeadAbilityEventData);
 			}
 		}
-		else
-		{
-			RemoveLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
-		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(PushGameplayTags::Status_Health_Empty);
 	}
 }
 
@@ -758,16 +827,16 @@ void UPushAbilitySystemComponent::ManaUpdated(const FOnAttributeChangeData& Chan
 		RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Full);
 	}
 
-	if (ChangeData.NewValue <= 0 && !HasMatchingGameplayTag(PushGameplayTags::Status_Dead))
+	if (ChangeData.NewValue <= 0)
 	{
 		if (!HasMatchingGameplayTag(PushGameplayTags::Status_Mana_Empty))
 		{
 			AddLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
 		}
-		else
-		{
-			RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
-		}
+	}
+	else
+	{
+		RemoveLooseGameplayTag(PushGameplayTags::Status_Mana_Empty);
 	}
 }
 
@@ -779,13 +848,17 @@ void UPushAbilitySystemComponent::ExperienceUpdated(const FOnAttributeChangeData
 	if (!HasHeroAttributes())
 		return;
 
+	RefreshLevelForExperience(ChangeData.NewValue);
+}
+
+void UPushAbilitySystemComponent::RefreshLevelForExperience(float CurrentExperience)
+{
 	if (IsAtMaxLevel())
 		return;
 
 	if (!AbilitySystemGenerics)
 		return;
 
-	float CurrentExp = ChangeData.NewValue;
 	const FRealCurve* ExperienceCurve = AbilitySystemGenerics->GetExperienceCurve();
 	if (!ExperienceCurve)
 	{
@@ -800,7 +873,7 @@ void UPushAbilitySystemComponent::ExperienceUpdated(const FOnAttributeChangeData
 	for (auto Iter = ExperienceCurve->GetKeyHandleIterator(); Iter; ++Iter)
 	{
 		float ExperienceToReachLevel = ExperienceCurve->GetKeyValue(*Iter);
-		if (CurrentExp < ExperienceToReachLevel)
+		if (CurrentExperience < ExperienceToReachLevel)
 		{
 			NextLevelExp = ExperienceToReachLevel;
 			break;
@@ -839,6 +912,38 @@ void UPushAbilitySystemComponent::AuthApplyGameplayEffect(TSubclassOf<UGameplayE
 	ApplyGameplayEffectSpecToSelf(*EffectSpecHandle.Data.Get());
 }
 
+void UPushAbilitySystemComponent::AuthApplyGameplayEffectIfMissing(TSubclassOf<UGameplayEffect> GameplayEffect, int32 Level)
+{
+	if (!GameplayEffect || HasActiveGameplayEffectOfClass(GameplayEffect))
+	{
+		return;
+	}
+
+	AuthApplyGameplayEffect(GameplayEffect, Level);
+}
+
+bool UPushAbilitySystemComponent::HasActiveGameplayEffectOfClass(TSubclassOf<UGameplayEffect> GameplayEffect) const
+{
+	if (!GameplayEffect)
+	{
+		return false;
+	}
+
+	const TArray<FActiveGameplayEffectHandle> ActiveEffectHandles = GetActiveEffects(FGameplayEffectQuery());
+	for (const FActiveGameplayEffectHandle& ActiveEffectHandle : ActiveEffectHandles)
+	{
+		const FActiveGameplayEffect* ActiveEffect = GetActiveGameplayEffect(ActiveEffectHandle);
+		if (ActiveEffect
+			&& ActiveEffect->Spec.Def
+			&& ActiveEffect->Spec.Def->GetClass()->IsChildOf(GameplayEffect))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool UPushAbilitySystemComponent::ShouldAbilityActivationBreakStealth(
 	const FGameplayAbilitySpecHandle Handle,
 	const UGameplayAbility* Ability) const
@@ -857,6 +962,15 @@ bool UPushAbilitySystemComponent::ShouldAbilityActivationBreakStealth(
 		&& AbilitySpec->InputID <= Ability4InputID;
 }
 
+bool UPushAbilitySystemComponent::IsPersistentBaselineEffect(
+	TSubclassOf<UGameplayEffect> GameplayEffectClass,
+	const FActiveGameplayEffect& ActiveEffect) const
+{
+	return GameplayEffectClass
+		&& ActiveEffect.Spec.Def
+		&& ActiveEffect.Spec.Def->GetClass()->IsChildOf(GameplayEffectClass);
+}
+
 bool UPushAbilitySystemComponent::ShouldPersistActiveEffectThroughDeath(const FActiveGameplayEffect& ActiveEffect) const
 {
 	FGameplayTagContainer GrantedTags;
@@ -870,7 +984,18 @@ bool UPushAbilitySystemComponent::ShouldPersistActiveEffectThroughDeath(const FA
 	const TSubclassOf<UGameplayEffect> DeathEffectClass = AbilitySystemGenerics
 		? AbilitySystemGenerics->GetDeathEffect()
 		: nullptr;
-	return DeathEffectClass
-		&& ActiveEffect.Spec.Def
-		&& ActiveEffect.Spec.Def->GetClass()->IsChildOf(DeathEffectClass);
+	if (IsPersistentBaselineEffect(DeathEffectClass, ActiveEffect))
+	{
+		return true;
+	}
+
+	if (!AbilitySystemGenerics || !HasHeroAttributes())
+	{
+		return false;
+	}
+
+	return IsPersistentBaselineEffect(AbilitySystemGenerics->GetHealthRegenEffect(), ActiveEffect)
+		|| IsPersistentBaselineEffect(AbilitySystemGenerics->GetManaRegenEffect(), ActiveEffect)
+		|| IsPersistentBaselineEffect(AbilitySystemGenerics->GetAddHeroTagEffect(), ActiveEffect)
+		|| IsPersistentBaselineEffect(AbilitySystemGenerics->GetLevelStatsEffect(), ActiveEffect);
 }

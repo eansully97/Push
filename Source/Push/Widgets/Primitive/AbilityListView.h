@@ -28,4 +28,10 @@ public:
 	UDataTable* AbilityDataTable;
 
 	const FAbilityWidgetData* FindWidgetDataForAbility(const TSubclassOf<UGameplayAbility>& AbilityClass) const;
+
+private:
+	void RebuildAbilityWidgetDataCache();
+
+	UPROPERTY(Transient)
+	TMap<TSubclassOf<UGameplayAbility>, FAbilityWidgetData> AbilityWidgetDataByAbilityClass;
 };

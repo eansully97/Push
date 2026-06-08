@@ -4,6 +4,7 @@
 #include "PushPlayerState.h"
 
 #include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/GAS/Attributes/PushHeroAttributeSet.h"
 #include "Push/GAS/Components/PushAbilitySystemComponent.h"
 
 APushPlayerState::APushPlayerState()
@@ -15,6 +16,7 @@ APushPlayerState::APushPlayerState()
 	PushAbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	PushAttributeSet = CreateDefaultSubobject<UPushAttributeSet>("PushAttributeSet");
+	HeroAttributeSet = CreateDefaultSubobject<UPushHeroAttributeSet>("HeroAttributeSet");
 }
 
 UAbilitySystemComponent* APushPlayerState::GetAbilitySystemComponent() const
@@ -30,4 +32,9 @@ UPushAbilitySystemComponent* APushPlayerState::GetPushAbilitySystemComponent() c
 UPushAttributeSet* APushPlayerState::GetPushAttributeSet() const
 {
 	return PushAttributeSet;
+}
+
+UPushHeroAttributeSet* APushPlayerState::GetPushHeroAttributeSet() const
+{
+	return HeroAttributeSet;
 }

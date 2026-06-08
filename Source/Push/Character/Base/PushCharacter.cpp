@@ -16,6 +16,8 @@
 #include "Push/PushGameplayTags.h"
 #include "Push/GAS/Components/PushAbilitySystemComponent.h"
 #include "Push/GAS/Attributes/PushAttributeSet.h"
+#include "Push/GAS/Attributes/PushHeroAttributeSet.h"
+#include "Push/GAS/Data/PushHeroLoadoutDataAsset.h"
 #include "Push/Player/States/PushPlayerState.h"
 #include "Push/Widgets/Overhead/OverheadWidget.h"
 #include "UObject/UObjectHash.h"
@@ -186,11 +188,37 @@ void APushCharacter::InitializeAbilitySystem()
 	if (ActiveAbilitySystemComponent != PushAbilitySystemComponent)
 	{
 		PushAbilitySystemComponent->SetIsReplicated(false);
-		ActiveAbilitySystemComponent->InitializeDefaultsFrom(PushAbilitySystemComponent);
+		if (HeroLoadout)
+		{
+			ActiveAbilitySystemComponent->InitializeDefaultsFromLoadout(HeroLoadout);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("%s has no HeroLoadout configured; falling back to pawn ASC defaults for PlayerState ASC initialization."),
+				*GetNameSafe(this));
+			ActiveAbilitySystemComponent->InitializeDefaultsFrom(PushAbilitySystemComponent);
+		}
 	}
 
-	RegisterAttributeSetSubobjects(ActiveAbilitySystemComponent->GetOwner());
-	RegisterAttributeSetSubobjects(this);
+	if (UsesPlayerStateAbilitySystem())
+	{
+		RegisterAttributeSetSubobjects(ActiveAbilitySystemComponent->GetOwner());
+
+		APushPlayerState* PushPlayerStateOwner = Cast<APushPlayerState>(ActiveAbilitySystemComponent->GetOwner());
+		UPushHeroAttributeSet* HeroAttributes = PushPlayerStateOwner ? PushPlayerStateOwner->GetPushHeroAttributeSet() : nullptr;
+		if (!HeroAttributes || !ActiveAbilitySystemComponent->GetSpawnedAttributes().Contains(HeroAttributes))
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("%s initialized a PlayerState-owned AbilitySystemComponent without hero progression attributes."),
+				*GetNameSafe(this));
+		}
+	}
+	else
+	{
+		RegisterAttributeSetSubobjects(this);
+	}
+
 	ActiveAbilitySystemComponent->InitAbilityActorInfo(ActiveAbilitySystemComponent->GetOwner(), this);
 
 	if (HasAuthority())
@@ -560,7 +588,8 @@ void APushCharacter::Respawn()
 
 	if (HasAuthority() && ActiveAbilitySystemComponent)
 	{
-		ActiveAbilitySystemComponent->ApplyFullStatEffect();
+		ActiveAbilitySystemComponent->InitializeBaseAttributes();
+		ActiveAbilitySystemComponent->ApplyRespawnStatEffects();
 	}
 }
 

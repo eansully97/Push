@@ -71,10 +71,13 @@ float UPushAbilitySystemStatics::GetManaCostFor(const UGameplayAbility* AbilityO
 	if (AbilityObj)
 	{
 		UGameplayEffect* CostEffect = AbilityObj->GetCostGameplayEffect();
-		if (CostEffect)
+		if (CostEffect && CostEffect->Modifiers.Num() > 0)
 		{
 			FGameplayEffectSpecHandle EffectSpec = ASC.MakeOutgoingSpec(CostEffect->GetClass(), AbilityLevel, ASC.MakeEffectContext());
-			CostEffect->Modifiers[0].ModifierMagnitude.AttemptCalculateMagnitude(*EffectSpec.Data.Get(), ManaCost);
+			if (EffectSpec.IsValid() && EffectSpec.Data.IsValid())
+			{
+				CostEffect->Modifiers[0].ModifierMagnitude.AttemptCalculateMagnitude(*EffectSpec.Data.Get(), ManaCost);
+			}
 		}
 	}
 	return FMath::Abs(ManaCost);
@@ -90,7 +93,10 @@ float UPushAbilitySystemStatics::GetCooldownDurationFor(const UGameplayAbility* 
 		if (CooldownEffect)
 		{
 			FGameplayEffectSpecHandle EffectSpec = ASC.MakeOutgoingSpec(CooldownEffect->GetClass(), AbilityLevel, ASC.MakeEffectContext());
-			CooldownEffect->DurationMagnitude.AttemptCalculateMagnitude(*EffectSpec.Data.Get(), Cooldown);
+			if (EffectSpec.IsValid() && EffectSpec.Data.IsValid())
+			{
+				CooldownEffect->DurationMagnitude.AttemptCalculateMagnitude(*EffectSpec.Data.Get(), Cooldown);
+			}
 		}
 	}
 	return FMath::Abs(Cooldown);
